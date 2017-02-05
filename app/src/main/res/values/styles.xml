@@ -1,0 +1,28 @@
+<resources>
+
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="colorPrimary">@color/color_primary</item>
+        <item name="colorPrimaryDark">@color/color_primary_dark</item>
+        <item name="colorAccent">@color/color_accent</item>
+
+        <item name="android:windowBackground">@color/window_background</item>
+
+        <item name="android:textColorPrimary">@color/primary_text</item>
+        <item name="android:textColorSecondary">@color/secondary_text</item>
+        <item name="android:textColorHighlight">@color/color_accent</item>
+    </style>
+
+    <style name="AppTheme.TextAppearance.List" parent="TextAppearance.AppCompat.Body1"/>
+
+    <style name="AppTheme.TextAppearance.List.Caption" parent="AppTheme.TextAppearance.List">
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="AppTheme.TextAppearance.List.Content" parent="AppTheme.TextAppearance.List">
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="AppTheme.TextAppearance.List.Content.Secondary">
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    </style>
+</resources>

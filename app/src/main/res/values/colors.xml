@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Palette colors Blue Grey -->
+    <!-- Color primary 500 from palette colors -->
+    <color name="color_primary">#607D8B</color>
+    <!-- Color primary dark 700 from palette colors -->
+    <color name="color_primary_dark">#455A64</color>
+    <!-- Color primary 500 from palette colors -->
+    <color name="color_accent">#607D8B</color>
+
+    <!-- 87% black -->
+    <color name="primary_text">#DE000000</color>
+    <!-- 54% black -->
+    <color name="secondary_text">#8A000000</color>
+    <!-- 38% black -->
+    <color name="disabled_text">#61000000</color>
+
+    <color name="error_text">#DD2C00</color>
+
+    <color name="window_background">#FFFFFFFF</color>
+</resources>

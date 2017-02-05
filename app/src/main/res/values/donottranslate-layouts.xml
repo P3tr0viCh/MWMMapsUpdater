@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="text_default_map_item_name" translatable="false">Map name</string>
+    <string name="text_default_map_item_date_local" translatable="false">1981.03.29</string>
+    <string name="text_default_map_item_date_server" translatable="false">2017.02.05</string>
+</resources>
