@@ -14,4 +14,7 @@
     <dimen name="map_item_padding_bottom">16dp</dimen>
     <dimen name="map_item_row_margin_top">4dp</dimen>
     <dimen name="map_item_row_margin_bottom">4dp</dimen>
+
+    <dimen name="layout_error_padding">16dp</dimen>
+    <dimen name="layout_error_description_margin">8dp</dimen>
 </resources>

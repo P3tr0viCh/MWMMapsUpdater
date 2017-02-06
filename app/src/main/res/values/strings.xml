@@ -3,4 +3,9 @@
 
     <string name="text_map_item_date_local">Установленная версия</string>
     <string name="text_map_item_date_server">Версия на сервере</string>
+
+    <string name="text_error_mwm_maps_not_found">Карты MAPS.ME на устройстве не найдены</string>
+    <string name="text_error_mwm_maps_not_found_path">Каталог %s не существует или не содержит нужных данных</string>
+
+    <string name="btn_retry_find_maps">Повторить поиск</string>
 </resources>

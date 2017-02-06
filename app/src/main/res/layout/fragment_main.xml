@@ -1,76 +1,116 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<LinearLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:layout_height="match_parent">
 
-    <TableLayout
+    <LinearLayout
+        android:id="@+id/layout_error"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingBottom="@dimen/map_version_padding_bottom"
-        android:paddingEnd="@dimen/map_version_padding_end"
-        android:paddingStart="@dimen/map_version_padding_start"
-        android:paddingTop="@dimen/map_version_padding_top">
+        android:layout_gravity="center_vertical"
+        android:orientation="vertical"
+        android:padding="@dimen/layout_error_padding">
 
-        <TableRow
+        <TextView
+            android:id="@+id/text_date_mwm_maps_not_found"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginBottom="@dimen/map_version_row_margin_bottom"
-            android:layout_marginTop="@dimen/map_version_row_margin_top">
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:text="@string/text_error_mwm_maps_not_found"
+            android:textAppearance="@style/AppTheme.TextAppearance.Text"/>
 
-            <TextView
-                android:id="@+id/text_date_local_label"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="@dimen/map_version_label_margin_end"
-                android:text="@string/text_map_item_date_local"
-                android:textAppearance="@style/AppTheme.TextAppearance.Text.Secondary"/>
-
-            <TextView
-                android:id="@+id/text_date_local"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textAppearance="@style/AppTheme.TextAppearance.Text"
-                tools:text="1981.03.29"/>
-        </TableRow>
-
-        <TableRow
+        <TextView
+            android:id="@+id/text_date_mwm_maps_not_found_description"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginBottom="@dimen/map_version_row_margin_bottom"
-            android:layout_marginTop="@dimen/map_version_row_margin_top">
+            android:layout_height="wrap_content"
+            android:layout_margin="@dimen/layout_error_description_margin"
+            android:gravity="center_horizontal"
+            android:text="@string/text_error_mwm_maps_not_found_path"
+            android:textAppearance="@style/AppTheme.TextAppearance.SubText.Secondary"/>
 
-            <TextView
-                android:id="@+id/text_date_server_label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="@dimen/map_version_label_margin_end"
-                android:text="@string/text_map_item_date_server"
-                android:textAppearance="@style/AppTheme.TextAppearance.Text.Secondary"/>
+        <Button
+            android:id="@+id/btn_retry_find_maps"
+            style="@style/AppTheme.Button.Borderless.Colored"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="@string/btn_retry_find_maps"/>
+    </LinearLayout>
 
-            <TextView
-                android:id="@+id/text_date_server"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textAppearance="@style/AppTheme.TextAppearance.Text"
-                tools:text="2017.02.05"/>
-        </TableRow>
-    </TableLayout>
-
-    <View
-        style="@style/AppTheme.Divider.Horizontal"/>
-
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/list"
-        android:name="ru.p3tr0vich.mwmmapsupdater.FragmentMain"
+    <LinearLayout
+        android:id="@+id/layout_main"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layoutManager="LinearLayoutManager"
-        tools:context="ru.p3tr0vich.mwmmapsupdater.FragmentMain"
-        tools:listitem="@layout/map_item">
-    </android.support.v7.widget.RecyclerView>
-</LinearLayout>
+        android:orientation="vertical"
+        >
+
+        <TableLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="@dimen/map_version_padding_bottom"
+            android:paddingEnd="@dimen/map_version_padding_end"
+            android:paddingStart="@dimen/map_version_padding_start"
+            android:paddingTop="@dimen/map_version_padding_top">
+
+            <TableRow
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginBottom="@dimen/map_version_row_margin_bottom"
+                android:layout_marginTop="@dimen/map_version_row_margin_top">
+
+                <TextView
+                    android:id="@+id/text_date_local_label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/map_version_label_margin_end"
+                    android:text="@string/text_map_item_date_local"
+                    android:textAppearance="@style/AppTheme.TextAppearance.Text.Secondary"/>
+
+                <TextView
+                    android:id="@+id/text_date_local"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/AppTheme.TextAppearance.Text"
+                    tools:text="1981.03.29"/>
+            </TableRow>
+
+            <TableRow
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_marginBottom="@dimen/map_version_row_margin_bottom"
+                android:layout_marginTop="@dimen/map_version_row_margin_top">
+
+                <TextView
+                    android:id="@+id/text_date_server_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="@dimen/map_version_label_margin_end"
+                    android:text="@string/text_map_item_date_server"
+                    android:textAppearance="@style/AppTheme.TextAppearance.Text.Secondary"/>
+
+                <TextView
+                    android:id="@+id/text_date_server"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/AppTheme.TextAppearance.Text"
+                    tools:text="2017.02.05"/>
+            </TableRow>
+        </TableLayout>
+
+        <View
+            style="@style/AppTheme.Divider.Horizontal"/>
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/list"
+            android:name="ru.p3tr0vich.mwmmapsupdater.FragmentMain"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layoutManager="LinearLayoutManager"
+            tools:context="ru.p3tr0vich.mwmmapsupdater.FragmentMain"
+            tools:listitem="@layout/map_item">
+        </android.support.v7.widget.RecyclerView>
+    </LinearLayout>
+</FrameLayout>
