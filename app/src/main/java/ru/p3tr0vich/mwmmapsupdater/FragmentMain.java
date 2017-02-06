@@ -9,11 +9,22 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 
 import ru.p3tr0vich.mwmmapsupdater.Models.MapItem;
-import ru.p3tr0vich.mwmmapsupdater.dummy.DummyContent;
+import ru.p3tr0vich.mwmmapsupdater.Models.MapVersion;
+import ru.p3tr0vich.mwmmapsupdater.dummy.DummyMapItems;
+import ru.p3tr0vich.mwmmapsupdater.dummy.DummyMapVersion;
 
 public class FragmentMain extends FragmentBase {
+
+    private static final DateFormat DATE_FORMAT = SimpleDateFormat.getDateInstance(DateFormat.SHORT);
+
+    private TextView mTextDateLocal;
+    private TextView mTextDateServer;
 
     private OnListFragmentInteractionListener mListener;
 
@@ -27,20 +38,23 @@ public class FragmentMain extends FragmentBase {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_main, container, false);
 
-        if (view instanceof RecyclerView) {
-            Context context = view.getContext();
+        mTextDateLocal = (TextView) view.findViewById(R.id.text_date_local);
+        mTextDateServer = (TextView) view.findViewById(R.id.text_date_server);
 
-            RecyclerView recyclerView = (RecyclerView) view;
+        Context context = view.getContext();
 
-            recyclerView.setHasFixedSize(true);
-            recyclerView.setItemAnimator(new DefaultItemAnimator());
+        RecyclerView recyclerView = (RecyclerView) view.findViewById(R.id.list);
 
-            recyclerView.addItemDecoration(new DividerItemDecoration(context, DividerItemDecoration.VERTICAL));
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
 
-            recyclerView.setLayoutManager(new LinearLayoutManager(context));
+        recyclerView.addItemDecoration(new DividerItemDecoration(context, DividerItemDecoration.VERTICAL));
 
-            recyclerView.setAdapter(new MapItemRecyclerViewAdapter(DummyContent.ITEMS, mListener));
-        }
+        recyclerView.setLayoutManager(new LinearLayoutManager(context));
+
+        recyclerView.setAdapter(new MapItemRecyclerViewAdapter(DummyMapItems.ITEMS, mListener));
+
+        updateVersions(DummyMapVersion.VERSION);
 
         return view;
     }
@@ -63,5 +77,10 @@ public class FragmentMain extends FragmentBase {
 
     interface OnListFragmentInteractionListener {
         void onListFragmentInteraction(MapItem item);
+    }
+
+    private void updateVersions(MapVersion mapVersion) {
+        mTextDateLocal.setText(DATE_FORMAT.format(mapVersion.getDateLocal()));
+        mTextDateServer.setText(DATE_FORMAT.format(mapVersion.getDateServer()));
     }
 }

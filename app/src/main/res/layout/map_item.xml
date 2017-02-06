@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:tools="http://schemas.android.com/tools"
               android:layout_width="match_parent"
-              android:layout_height="@dimen/map_item_tile_height"
+              android:layout_height="wrap_content"
               android:orientation="vertical"
               android:paddingBottom="@dimen/map_item_padding_bottom"
               android:paddingEnd="@dimen/map_item_padding_end"
@@ -12,58 +13,19 @@
         android:id="@+id/text_name"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/map_item_row_margin_bottom"
+        android:layout_marginTop="@dimen/map_item_row_margin_top"
         android:ellipsize="middle"
-        android:text="@string/text_default_map_item_name"
-        android:textAppearance="@style/AppTheme.TextAppearance.List.Caption"/>
+        android:textAppearance="@style/AppTheme.TextAppearance.List.Caption"
+        tools:text="Map name"/>
 
-    <TableLayout
+    <TextView
+        android:id="@+id/text_description"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="bottom">
-
-        <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginTop="@dimen/map_item_content_row_margin_top">
-
-            <TextView
-                android:id="@+id/text_date_local_label"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="@dimen/map_item_content_label_margin_end"
-                android:text="@string/text_map_item_date_local"
-                android:textAppearance="@style/AppTheme.TextAppearance.List.Content.Secondary"/>
-
-            <TextView
-                android:id="@+id/text_date_local"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/text_default_map_item_date_local"
-                android:textAppearance="@style/AppTheme.TextAppearance.List.Content"/>
-
-        </TableRow>
-
-        <TableRow
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_marginTop="@dimen/map_item_content_row_margin_top">
-
-            <TextView
-                android:id="@+id/text_date_server_label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="@dimen/map_item_content_label_margin_end"
-                android:text="@string/text_map_item_date_server"
-                android:textAppearance="@style/AppTheme.TextAppearance.List.Content.Secondary"/>
-
-            <TextView
-                android:id="@+id/text_date_server"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/text_default_map_item_date_server"
-                android:textAppearance="@style/AppTheme.TextAppearance.List.Content"/>
-        </TableRow>
-
-    </TableLayout>
-
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/map_item_row_margin_bottom"
+        android:layout_marginTop="@dimen/map_item_row_margin_top"
+        android:ellipsize="middle"
+        android:textAppearance="@style/AppTheme.TextAppearance.List.Content.Secondary"
+        tools:text="Map description"/>
 </LinearLayout>

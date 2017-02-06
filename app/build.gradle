@@ -1,6 +1,24 @@
 apply plugin: 'com.android.application'
 
+Properties props = new Properties()
+props.load(new FileInputStream(file("c:\\Android\\Keystore\\ru.p3tr0vich.mwmmapsupdater.properties")))
+
 android {
+    signingConfigs {
+        debug {
+            keyAlias 'ru.p3tr0vich.mwmmapsupdater'
+            keyPassword props['keyPassword']
+            storeFile file(props['storeFile'])
+            storePassword props['storePassword']
+        }
+        release {
+            keyAlias 'ru.p3tr0vich.mwmmapsupdater'
+            keyPassword props['keyPassword']
+            storeFile file(props['storeFile'])
+            storePassword props['storePassword']
+        }
+    }
+
     compileSdkVersion rootProject.ext.compileSdkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
 
@@ -17,13 +35,25 @@ android {
     }
 
     buildTypes {
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+
+            signingConfig signingConfigs.debug
+
+            ext.enableCrashlytics = false
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
 
+            signingConfig signingConfigs.release
+
             applicationVariants.all { variant ->
                 appendVersionName(variant, defaultConfig)
             }
+
+            ext.enableCrashlytics = false
         }
     }
 }
@@ -49,5 +79,4 @@ dependencies {
     compile supportRecyclerView
 
     compile rootProject.ext.constraintLayout
-//    compile 'com.android.support:support-v4:25.1.1'
 }

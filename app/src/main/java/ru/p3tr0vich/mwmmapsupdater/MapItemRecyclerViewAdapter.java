@@ -6,16 +6,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.List;
 
 import ru.p3tr0vich.mwmmapsupdater.FragmentMain.OnListFragmentInteractionListener;
 import ru.p3tr0vich.mwmmapsupdater.Models.MapItem;
 
 public class MapItemRecyclerViewAdapter extends RecyclerView.Adapter<MapItemRecyclerViewAdapter.ViewHolder> {
-
-    private static final DateFormat DATE_FORMAT = SimpleDateFormat.getDateInstance();
 
     private final List<MapItem> mValues;
     private final OnListFragmentInteractionListener mListener;
@@ -37,8 +33,7 @@ public class MapItemRecyclerViewAdapter extends RecyclerView.Adapter<MapItemRecy
         holder.mItem = mValues.get(position);
 
         holder.mTextName.setText(holder.mItem.getName());
-        holder.mTextDateLocal.setText(DATE_FORMAT.format(holder.mItem.getDateLocal()));
-        holder.mTextDateServer.setText(DATE_FORMAT.format(holder.mItem.getDateServer()));
+        holder.mTextDescription.setText(holder.mItem.getDescription());
 
         holder.mView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -61,8 +56,7 @@ public class MapItemRecyclerViewAdapter extends RecyclerView.Adapter<MapItemRecy
         private final View mView;
 
         private final TextView mTextName;
-        private final TextView mTextDateLocal;
-        private final TextView mTextDateServer;
+        private final TextView mTextDescription;
 
         private MapItem mItem;
 
@@ -70,8 +64,7 @@ public class MapItemRecyclerViewAdapter extends RecyclerView.Adapter<MapItemRecy
             super(view);
             mView = view;
             mTextName = (TextView) view.findViewById(R.id.text_name);
-            mTextDateLocal = (TextView) view.findViewById(R.id.text_date_local);
-            mTextDateServer = (TextView) view.findViewById(R.id.text_date_server);
+            mTextDescription = (TextView) view.findViewById(R.id.text_description);
         }
 
         @Override

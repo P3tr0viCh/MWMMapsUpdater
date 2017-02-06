@@ -1,39 +1,38 @@
 package ru.p3tr0vich.mwmmapsupdater.Models;
 
-import java.util.Date;
-
 public class MapItem {
 
-    private String mName;
-    private Date mDateLocal;
-    private Date mDateServer;
+    private String mId;
 
-    public MapItem(String name) {
-        mName = name;
+    private String mName;
+    private String mDescription;
+
+    public MapItem(String id) {
+        mId = id;
+    }
+
+    public String getId() {
+        return mId;
     }
 
     public String getName() {
         return mName;
     }
 
-    public Date getDateLocal() {
-        return mDateLocal;
+    public void setName(String name) {
+        mName = name;
     }
 
-    public void setDateLocal(Date dateLocal) {
-        mDateLocal = dateLocal;
+    public String getDescription() {
+        return mDescription;
     }
 
-    public Date getDateServer() {
-        return mDateServer;
-    }
-
-    public void setDateServer(Date dateServer) {
-        mDateServer = dateServer;
+    public void setDescription(String description) {
+        mDescription = description;
     }
 
     @Override
     public String toString() {
-        return "name: " + mName + ", local date: " + mDateLocal + ", server date: " + mDateServer;
+        return "id: " + mId + ", name: " + mName + ", description: " + mDescription;
     }
 }
