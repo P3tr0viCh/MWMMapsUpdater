@@ -7,10 +7,14 @@ import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import java.io.File;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
@@ -53,6 +57,8 @@ public class FragmentMain extends FragmentBase {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_main, container, false);
+
+        setHasOptionsMenu(true);
 
         mLayoutError = (ViewGroup) view.findViewById(R.id.layout_error);
         mLayoutMain = (ViewGroup) view.findViewById(R.id.layout_main);
@@ -112,6 +118,35 @@ public class FragmentMain extends FragmentBase {
         textView.setText(getString(R.string.text_error_mwm_maps_not_found_path, mapDir));
     }
 
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        super.onCreateOptionsMenu(menu, inflater);
+        inflater.inflate(R.menu.menu_main, menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        File mapDir = new File(preferencesHelper.getMapsDir());
+
+        switch (item.getItemId()) {
+            case R.id.action_main_update:
+                updateMapList();
+                break;
+            case R.id.action_main_create_mwm_dir:
+                if (!mapDir.exists()) {
+                    return mapDir.mkdir();
+                }
+                break;
+            case R.id.action_main_delete_mwm_dir:
+                if (mapDir.exists()) {
+                    return mapDir.delete();
+                }
+                break;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
     private void updateMapList() {
         mLayoutError.setVisibility(View.GONE);
         mLayoutMain.setVisibility(View.GONE);
@@ -120,9 +155,10 @@ public class FragmentMain extends FragmentBase {
 
         MapFiles mapFiles = new MapFiles(mapDir);
 
+        @MapFilesFindHelper.Result
         int result = MapFilesFindHelper.find(mapFiles);
 
-        if (result != 0) {
+        if (result != MapFilesFindHelper.RESULT_OK) {
             updateError(mapDir);
 
             mLayoutError.setVisibility(View.VISIBLE);

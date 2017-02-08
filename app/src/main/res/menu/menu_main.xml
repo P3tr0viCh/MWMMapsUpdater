@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_main_update"
+        android:title="update"/>
+    <item
+        android:id="@+id/action_main_create_mwm_dir"
+        android:title="create mwm dir"/>
+    <item
+        android:id="@+id/action_main_delete_mwm_dir"
+        android:title="delete mwm dir"/>
+</menu>
