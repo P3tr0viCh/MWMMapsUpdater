@@ -1,4 +1,4 @@
-package ru.p3tr0vich.mwmmapsupdater.Models;
+package ru.p3tr0vich.mwmmapsupdater.models;
 
 import java.util.Date;
 

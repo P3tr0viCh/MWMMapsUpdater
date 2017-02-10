@@ -9,7 +9,7 @@ import android.widget.TextView;
 import java.util.List;
 
 import ru.p3tr0vich.mwmmapsupdater.FragmentMain.OnListFragmentInteractionListener;
-import ru.p3tr0vich.mwmmapsupdater.Models.MapItem;
+import ru.p3tr0vich.mwmmapsupdater.models.MapItem;
 
 public class MapItemRecyclerViewAdapter extends RecyclerView.Adapter<MapItemRecyclerViewAdapter.ViewHolder> {
 

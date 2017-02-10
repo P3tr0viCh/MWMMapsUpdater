@@ -1,16 +1,19 @@
 package ru.p3tr0vich.mwmmapsupdater.helpers;
 
 import android.support.annotation.IntDef;
-import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.concurrent.TimeUnit;
 
-import ru.p3tr0vich.mwmmapsupdater.Models.MapFiles;
+import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
+import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
 public class MapFilesFindHelper {
+
+    private static final String TAG = "MapFilesFindHelper";
 
     private static final boolean WAIT_ENABLED = true;
 
@@ -24,9 +27,11 @@ public class MapFilesFindHelper {
     public static final int RESULT_SUB_DIR_NOT_EXISTS = 2;
     public static final int RESULT_FILES_NOT_EXISTS = 3;
 
-    @Result
-    public static int find(@NonNull MapFiles mapFiles) {
-        File mapDirFile = new File(mapFiles.getMapDir());
+    @Nullable
+    public static MapFiles find(@Nullable String mapDir) {
+        if (mapDir == null || mapDir.isEmpty()) {
+            return null;
+        }
 
         if (WAIT_ENABLED) {
             for (int i = 0, waitSeconds = 3; i < waitSeconds; i++) {
@@ -35,14 +40,16 @@ public class MapFilesFindHelper {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-//                UtilsLog.d(TAG, "findFiles", "wait... " + (waitSeconds - i));
+                UtilsLog.d(TAG, "findFiles", "wait... " + (waitSeconds - i));
             }
         }
 
+        File mapDirFile = new File(mapDir);
+
         if (!mapDirFile.exists() || !mapDirFile.isDirectory()) {
-            return RESULT_DIR_NOT_EXISTS;
+            return new MapFiles(mapDir, null, null);
         }
 
-        return RESULT_OK;
+        return new MapFiles(mapDir, null, null);
     }
 }

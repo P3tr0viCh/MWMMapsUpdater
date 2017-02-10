@@ -3,7 +3,7 @@ package ru.p3tr0vich.mwmmapsupdater.dummy;
 import java.util.ArrayList;
 import java.util.List;
 
-import ru.p3tr0vich.mwmmapsupdater.Models.MapItem;
+import ru.p3tr0vich.mwmmapsupdater.models.MapItem;
 
 public class DummyMapItems {
 

@@ -5,7 +5,7 @@ import android.text.format.DateUtils;
 import java.util.Date;
 import java.util.Random;
 
-import ru.p3tr0vich.mwmmapsupdater.Models.MapVersion;
+import ru.p3tr0vich.mwmmapsupdater.models.MapVersion;
 
 public class DummyMapVersion {
 

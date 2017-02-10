@@ -2,6 +2,9 @@ package ru.p3tr0vich.mwmmapsupdater;
 
 import android.content.Context;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.Loader;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
@@ -19,14 +22,20 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
-import ru.p3tr0vich.mwmmapsupdater.Models.MapFiles;
-import ru.p3tr0vich.mwmmapsupdater.Models.MapItem;
-import ru.p3tr0vich.mwmmapsupdater.Models.MapVersion;
 import ru.p3tr0vich.mwmmapsupdater.dummy.DummyMapItems;
 import ru.p3tr0vich.mwmmapsupdater.dummy.DummyMapVersion;
-import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesFindHelper;
+import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
+import ru.p3tr0vich.mwmmapsupdater.models.MapItem;
+import ru.p3tr0vich.mwmmapsupdater.models.MapVersion;
+import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
-public class FragmentMain extends FragmentBase {
+public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCallbacks<MapFiles> {
+
+    private static final String TAG = "FragmentMain";
+
+    private static final boolean LOG_ENABLED = true;
+
+    private static final int MAP_FILES_LOADER_ID = 0;
 
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy.MM.dd", Locale.getDefault());
 
@@ -51,6 +60,9 @@ public class FragmentMain extends FragmentBase {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (LOG_ENABLED) {
+            UtilsLog.d(TAG, "onCreate", "savedInstanceState " + (savedInstanceState == null ? "=" : "!") + "= null");
+        }
     }
 
     @Override
@@ -84,18 +96,32 @@ public class FragmentMain extends FragmentBase {
         view.findViewById(R.id.btn_retry_find_maps).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                updateMapList();
+                getLoaderManager().restartLoader(MAP_FILES_LOADER_ID, null, FragmentMain.this);
             }
         });
 
+        mLayoutError.setVisibility(View.GONE);
+        mLayoutMain.setVisibility(View.GONE);
+
         return view;
+    }
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+
+        if (LOG_ENABLED) {
+            UtilsLog.d(TAG, "onActivityCreated", "savedInstanceState " + (savedInstanceState == null ? "=" : "!") + "= null");
+        }
+
+        getLoaderManager().initLoader(MAP_FILES_LOADER_ID, null, this);
     }
 
     @Override
     public void onStart() {
         super.onStart();
 
-        updateMapList();
+//        updateMapList();
     }
 
     @Override
@@ -130,7 +156,7 @@ public class FragmentMain extends FragmentBase {
 
         switch (item.getItemId()) {
             case R.id.action_main_update:
-                updateMapList();
+                getLoaderManager().restartLoader(MAP_FILES_LOADER_ID, null, this);
                 break;
             case R.id.action_main_create_mwm_dir:
                 if (!mapDir.exists()) {
@@ -147,23 +173,65 @@ public class FragmentMain extends FragmentBase {
         return super.onOptionsItemSelected(item);
     }
 
-    private void updateMapList() {
-        mLayoutError.setVisibility(View.GONE);
-        mLayoutMain.setVisibility(View.GONE);
+//    private void updateMapList() {
+//        mLayoutError.setVisibility(View.GONE);
+//        mLayoutMain.setVisibility(View.GONE);
+//
+//        String mapDir = preferencesHelper.getMapsDir();
+//
+//        MapFiles mapFiles = new MapFiles(mapDir);
+//
+//        @MapFilesFindHelper.Result
+//        int result = MapFilesFindHelper.find(mapFiles);
+//
+//        if (result != MapFilesFindHelper.RESULT_OK) {
+//            updateError(mapDir);
+//
+//            mLayoutError.setVisibility(View.VISIBLE);
+//        } else {
+//            mLayoutMain.setVisibility(View.VISIBLE);
+//        }
+//    }
 
-        String mapDir = preferencesHelper.getMapsDir();
-
-        MapFiles mapFiles = new MapFiles(mapDir);
-
-        @MapFilesFindHelper.Result
-        int result = MapFilesFindHelper.find(mapFiles);
-
-        if (result != MapFilesFindHelper.RESULT_OK) {
-            updateError(mapDir);
-
-            mLayoutError.setVisibility(View.VISIBLE);
-        } else {
-            mLayoutMain.setVisibility(View.VISIBLE);
+    @Override
+    public Loader<MapFiles> onCreateLoader(int id, Bundle args) {
+        if (LOG_ENABLED) {
+            UtilsLog.d(TAG, "onCreateLoader");
         }
+
+        return new MapFilesLoader(getContext(), preferencesHelper.getMapsDir());
+    }
+
+    @Override
+    public void onLoadFinished(Loader<MapFiles> loader, MapFiles data) {
+        if (LOG_ENABLED) {
+            UtilsLog.d(TAG, "onLoadFinished");
+        }
+
+        String mapDir = "";
+
+        if (data != null) {
+            mapDir = data.getMapDir();
+
+            if (mapDir != null && !mapDir.isEmpty()) {
+                String mapSubDir = data.getMapSubDir();
+
+                if (mapSubDir != null && !mapSubDir.isEmpty()) {
+                    mLayoutMain.setVisibility(View.VISIBLE);
+                    mLayoutError.setVisibility(View.GONE);
+
+                    return;
+                }
+            }
+        }
+
+        updateError(mapDir);
+        mLayoutMain.setVisibility(View.GONE);
+        mLayoutError.setVisibility(View.VISIBLE);
+    }
+
+    @Override
+    public void onLoaderReset(Loader<MapFiles> loader) {
+//
     }
 }
