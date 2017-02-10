@@ -27,6 +27,11 @@ public class MapFilesFindHelper {
         }
     };
 
+    private static final Pattern MAP_SUB_DIR_NAME_PATTERN = Pattern.compile("\\d{6}", Pattern.CASE_INSENSITIVE);
+
+    private static final Pattern MAP_FILE_NAME_PATTERN = Pattern.compile("^(.+)(\\.mwm)$", Pattern.CASE_INSENSITIVE);
+    private static final int MAP_FILE_NAME_PATTERN_GROUP_INDEX = 1;
+
     @NonNull
     public static MapFiles find(@NonNull String mapDirName) {
         if (WAIT_ENABLED) {
@@ -56,11 +61,15 @@ public class MapFilesFindHelper {
 
                     String fileName;
 
+                    Matcher matcher;
+
                     for (File file : listFiles) {
                         if (file.isDirectory()) {
                             fileName = file.getName();
 
-                            if (fileName.matches("\\d{6}")) {
+                            matcher = MAP_SUB_DIR_NAME_PATTERN.matcher(fileName);
+
+                            if (matcher.find()) {
                                 subDirNamesList.add(fileName);
                             }
                         }
@@ -69,17 +78,7 @@ public class MapFilesFindHelper {
                     if (subDirNamesList.isEmpty()) {
                         result = MapFiles.RESULT_SUB_DIR_NOT_EXISTS;
                     } else {
-                        UtilsLog.d(TAG, "findFiles", "before sort");
-                        for (String name : subDirNamesList) {
-                            UtilsLog.d(TAG, "findFiles", name);
-                        }
-
                         Collections.sort(subDirNamesList, MAP_SUB_DIR_COMPARATOR);
-
-                        UtilsLog.d(TAG, "findFiles", "after sort");
-                        for (String name : subDirNamesList) {
-                            UtilsLog.d(TAG, "findFiles", name);
-                        }
 
                         mapSubDirName = subDirNamesList.get(0);
 
@@ -89,16 +88,14 @@ public class MapFilesFindHelper {
                         if (listFiles != null) {
                             fileNameList = new ArrayList<>();
 
-                            final Pattern pattern = Pattern.compile("^(\\w+)(\\.mwm)$", Pattern.CASE_INSENSITIVE);
-
                             for (File file : listFiles) {
                                 if (file.isFile()) {
                                     fileName = file.getName();
 
-                                    final Matcher matcher = pattern.matcher(fileName);
+                                    matcher = MAP_FILE_NAME_PATTERN.matcher(fileName);
 
                                     if (matcher.find()) {
-                                        fileNameList.add(matcher.group(0));
+                                        fileNameList.add(matcher.group(MAP_FILE_NAME_PATTERN_GROUP_INDEX));
                                     }
                                 }
                             }
@@ -106,17 +103,7 @@ public class MapFilesFindHelper {
                             if (fileNameList.isEmpty()) {
                                 result = MapFiles.RESULT_FILES_NOT_EXISTS;
                             } else {
-                                UtilsLog.d(TAG, "findFiles", "before sort");
-                                for (String name : fileNameList) {
-                                    UtilsLog.d(TAG, "findFiles", name);
-                                }
-
                                 Collections.sort(fileNameList);
-
-                                UtilsLog.d(TAG, "findFiles", "after sort");
-                                for (String name : fileNameList) {
-                                    UtilsLog.d(TAG, "findFiles", name);
-                                }
 
                                 result = MapFiles.RESULT_OK;
                             }

@@ -17,14 +17,24 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.Random;
 
 import ru.p3tr0vich.mwmmapsupdater.broadcastreceivers.BroadcastReceiverMapFilesLoading;
-import ru.p3tr0vich.mwmmapsupdater.dummy.DummyMapItems;
 import ru.p3tr0vich.mwmmapsupdater.dummy.DummyMapVersion;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
 import ru.p3tr0vich.mwmmapsupdater.models.MapItem;
@@ -41,12 +51,15 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
     private static final int MAP_FILES_LOADER_ID = 0;
 
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy.MM.dd", Locale.getDefault());
+    private static final DateFormat MAP_SUB_DIR_DATE_FORMAT = new SimpleDateFormat("yyMMdd", Locale.getDefault());
 
     private ViewGroup mLayoutError;
     private ViewGroup mLayoutMain;
 
     private TextView mTextDateLocal;
     private TextView mTextDateServer;
+
+    private MapItemRecyclerViewAdapter mMapItemRecyclerViewAdapter;
 
     private OnListFragmentInteractionListener mListener;
 
@@ -97,7 +110,7 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
 
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
 
-        recyclerView.setAdapter(new MapItemRecyclerViewAdapter(DummyMapItems.ITEMS, mListener));
+        recyclerView.setAdapter(mMapItemRecyclerViewAdapter = new MapItemRecyclerViewAdapter(mListener));
 
         updateVersions(DummyMapVersion.VERSION);
 
@@ -146,10 +159,6 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
         mBroadcastReceiverMapFilesLoading = new BroadcastReceiverMapFilesLoading() {
             @Override
             public void onReceive(boolean loading) {
-                if (loading) {
-                    mLayoutMain.setVisibility(View.GONE);
-                    mLayoutError.setVisibility(View.GONE);
-                }
             }
         };
         mBroadcastReceiverMapFilesLoading.register(getContext());
@@ -177,6 +186,14 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
 
         File mapDir = new File(preferencesHelper.getMapsDir());
 
+        File[] listFiles;
+
+        String mapSubDirName;
+
+        Random random = new Random();
+
+        int i;
+
         switch (item.getItemId()) {
             case R.id.action_main_update:
                 getLoaderManager().restartLoader(MAP_FILES_LOADER_ID, null, this);
@@ -190,11 +207,9 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
 
                 break;
             case R.id.action_main_create_mwm_sub_dir:
-                String mapSubDirName = "17";
+                mapSubDirName = "17";
 
-                Random random = new Random();
-
-                int i = 1 + random.nextInt(12);
+                i = 1 + random.nextInt(12);
                 if (i < 10) {
                     mapSubDirName += "0";
                 }
@@ -216,7 +231,7 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
             case R.id.action_main_delete_all_mwm_sub_dirs:
                 result = true;
 
-                File[] listFiles = mapDir.listFiles();
+                listFiles = mapDir.listFiles();
 
                 if (listFiles != null) {
                     for (File file : listFiles) {
@@ -229,6 +244,112 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
                 }
 
                 break;
+            case R.id.action_main_create_files:
+                listFiles = mapDir.listFiles();
+
+                List<String> subDirNamesList = new ArrayList<>();
+
+                if (listFiles != null) {
+                    for (File file : listFiles) {
+                        if (file.isDirectory()) {
+                            String fileName = file.getName();
+
+                            if (fileName.matches("\\d{6}")) {
+                                subDirNamesList.add(fileName);
+                            }
+                        }
+                    }
+                }
+
+                if (subDirNamesList.isEmpty()) {
+                    mapSubDirName = "17";
+
+                    i = 1 + random.nextInt(12);
+                    if (i < 10) {
+                        mapSubDirName += "0";
+                    }
+                    mapSubDirName += String.valueOf(i);
+
+                    i = 1 + random.nextInt(29);
+                    if (i < 10) {
+                        mapSubDirName += "0";
+                    }
+                    mapSubDirName += String.valueOf(i);
+
+                    UtilsLog.d(TAG, "create sub dir", mapSubDirName);
+
+                    mapSubDir = new File(mapDir, mapSubDirName);
+
+                    result = mapSubDir.mkdirs();
+                } else {
+                    Collections.sort(subDirNamesList, new Comparator<String>() {
+                        @Override
+                        public int compare(String o1, String o2) {
+                            return o2.compareTo(o1);
+                        }
+                    });
+
+                    mapSubDirName = subDirNamesList.get(0);
+
+                    UtilsLog.d(TAG, "use existing sub dir", mapSubDirName);
+
+                    mapSubDir = new File(mapDir, mapSubDirName);
+
+                    result = true;
+                }
+
+                if (result) {
+                    File file;
+                    for (i = 0; i < 5; i++) {
+                        file = new File(mapSubDir, String.valueOf(i) + ".mwm");
+                        try {
+                            result = file.createNewFile();
+                        } catch (IOException e) {
+                            result = false;
+                        }
+
+                        if (!result) {
+                            break;
+                        }
+                    }
+                    for (i = 0; i < 5; i++) {
+                        file = new File(mapSubDir, String.valueOf(random.nextLong()) + ".mwm");
+                        try {
+                            result = file.createNewFile();
+                        } catch (IOException e) {
+                            result = false;
+                        }
+
+                        if (!result) {
+                            break;
+                        }
+                    }
+                    for (i = 0; i < 5; i++) {
+                        file = new File(mapSubDir, String.valueOf(random.nextLong()) + ".mwm2");
+                        try {
+                            result = file.createNewFile();
+                        } catch (IOException e) {
+                            result = false;
+                        }
+
+                        if (!result) {
+                            break;
+                        }
+                    }
+                    for (i = 5; i < 10; i++) {
+                        file = new File(mapSubDir, String.valueOf(i));
+                        try {
+                            result = file.createNewFile();
+                        } catch (IOException e) {
+                            result = false;
+                        }
+
+                        if (!result) {
+                            break;
+                        }
+                    }
+                }
+
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -254,22 +375,106 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
         }
 
         if (data != null) {
+            mapDir = data.getMapDir();
 
             if (data.getResult() == MapFiles.RESULT_OK) {
-                mLayoutMain.setVisibility(View.VISIBLE);
+                MapVersion mapVersion = new MapVersion();
 
-                return;
-            } else {
-                mapDir = data.getMapDir();
+                Date mapDateLocal = null;
+                try {
+                    // mapSubDir == '171232' ==> '180101';
+                    mapDateLocal = MAP_SUB_DIR_DATE_FORMAT.parse(data.getMapSubDir());
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+
+                mapVersion.setDateLocal(mapDateLocal);
+                mapVersion.setDateServer(new Date());
+
+                updateVersions(mapVersion);
+
+                List<MapItem> mapItems = new ArrayList<>();
+
+                List<String> fileList = data.getFileList();
+
+                MapItem mapItem;
+
+                if (fileList != null) {
+                    String json = null;
+
+                    try {
+                        // TODO: 11.02.2017 en
+                        String countries = "countries-strings/ru.json/";
+
+                        InputStream is = getResources().getAssets().open(countries + "localize.json");
+
+                        int size = is.available();
+
+                        byte[] buffer = new byte[size];
+
+                        //noinspection ResultOfMethodCallIgnored
+                        is.read(buffer);
+
+                        is.close();
+
+                        json = new String(buffer, "UTF-8");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                    JSONObject jsonObject = null;
+
+                    if (json != null && !json.isEmpty()) {
+                        try {
+                            jsonObject = new JSONObject(json);
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    for (String fileName : fileList) {
+                        mapItem = new MapItem(fileName);
+
+                        String name = fileName;
+                        String description = null;
+
+                        if (jsonObject != null) {
+                            try {
+                                name = jsonObject.getString(fileName);
+                                description = jsonObject.getString(fileName + " Description");
+                            } catch (JSONException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                        mapItem.setName(name);
+                        mapItem.setDescription(description);
+
+                        mapItems.add(mapItem);
+                    }
+
+                    mMapItemRecyclerViewAdapter.swapItems(mapItems);
+
+                    mLayoutError.setVisibility(View.GONE);
+                    mLayoutMain.setVisibility(View.VISIBLE);
+
+                    return;
+                }
             }
         }
 
+        mMapItemRecyclerViewAdapter.notifyItemRangeRemoved(0, mMapItemRecyclerViewAdapter.getItemCount());
+
+        mMapItemRecyclerViewAdapter.swapItems(null);
+
         updateError(mapDir);
+
+        mLayoutMain.setVisibility(View.GONE);
         mLayoutError.setVisibility(View.VISIBLE);
     }
 
     @Override
     public void onLoaderReset(Loader<MapFiles> loader) {
-//
+        mMapItemRecyclerViewAdapter.swapItems(null);
     }
 }

@@ -21,4 +21,8 @@
         android:id="@+id/action_main_delete_all_mwm_sub_dirs"
         android:title="delete all mwm sub dirs"
         tools:ignore="HardcodedText"/>
+    <item
+        android:id="@+id/action_main_create_files"
+        android:title="create files"
+        tools:ignore="HardcodedText"/>
 </menu>

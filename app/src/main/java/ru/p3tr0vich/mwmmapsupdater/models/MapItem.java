@@ -33,6 +33,10 @@ public class MapItem {
 
     @Override
     public String toString() {
-        return "id: " + mId + ", name: " + mName + ", description: " + mDescription;
+        return "MapItem{" +
+                "mId='" + mId + '\'' +
+                ", mName='" + mName + '\'' +
+                ", mDescription='" + mDescription + '\'' +
+                '}';
     }
 }

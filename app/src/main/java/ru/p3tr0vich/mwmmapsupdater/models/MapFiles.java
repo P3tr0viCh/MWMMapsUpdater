@@ -22,6 +22,7 @@ public class MapFiles {
 
     @Result
     private int mResult;
+
     private String mMapDir;
     private String mMapSubDir;
 

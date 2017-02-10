@@ -14,17 +14,13 @@ public class MapFilesLoader extends AsyncTaskLoader<MapFiles> {
 
     private static final String TAG = "MapFilesLoader";
 
-    private static final boolean LOG_ENABLED = true;
+    private static final boolean LOG_ENABLED = false;
 
     private String mMapDir;
 
     public MapFilesLoader(Context context, @NonNull String mapDir) {
         super(context);
         mMapDir = mapDir;
-
-        if (LOG_ENABLED) {
-            UtilsLog.d(TAG, "constructor");
-        }
     }
 
     @Override
