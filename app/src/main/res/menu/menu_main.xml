@@ -1,12 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:tools="http://schemas.android.com/tools">
     <item
         android:id="@+id/action_main_update"
-        android:title="update"/>
+        android:title="update"
+        tools:ignore="HardcodedText"/>
     <item
         android:id="@+id/action_main_create_mwm_dir"
-        android:title="create mwm dir"/>
+        android:title="create mwm dir"
+        tools:ignore="HardcodedText"/>
     <item
         android:id="@+id/action_main_delete_mwm_dir"
-        android:title="delete mwm dir"/>
+        android:title="delete mwm dir"
+        tools:ignore="HardcodedText"/>
+    <item
+        android:id="@+id/action_main_create_mwm_sub_dir"
+        android:title="create mwm sub dir"
+        tools:ignore="HardcodedText"/>
+    <item
+        android:id="@+id/action_main_delete_all_mwm_sub_dirs"
+        android:title="delete all mwm sub dirs"
+        tools:ignore="HardcodedText"/>
 </menu>

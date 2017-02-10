@@ -5,15 +5,19 @@ import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
 
+import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
+
 public class UtilsLog {
     private static final String LOG_TAG = "XXX";
 
     public static void d(@Nullable String tag, @NonNull String msg, @Nullable String extMsg) {
-        if (!TextUtils.isEmpty(tag)) msg = tag + " -- " + msg;
+        if (BuildConfig.DEBUG) {
+            if (!TextUtils.isEmpty(tag)) msg = tag + " -- " + msg;
 
-        if (!TextUtils.isEmpty(extMsg)) msg = msg + ": " + extMsg;
+            if (!TextUtils.isEmpty(extMsg)) msg = msg + ": " + extMsg;
 
-        Log.d(LOG_TAG, msg);
+            Log.d(LOG_TAG, msg);
+        }
     }
 
     public static void d(@NonNull String tag, @NonNull String msg) {
