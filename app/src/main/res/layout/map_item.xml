@@ -15,7 +15,8 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="@dimen/map_item_row_margin_bottom"
         android:layout_marginTop="@dimen/map_item_row_margin_top"
-        android:ellipsize="middle"
+        android:ellipsize="end"
+        android:maxLines="1"
         android:textAppearance="@style/AppTheme.TextAppearance.List.Caption"
         tools:text="Map name"/>
 
@@ -25,7 +26,8 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="@dimen/map_item_row_margin_bottom"
         android:layout_marginTop="@dimen/map_item_row_margin_top"
-        android:ellipsize="middle"
+        android:ellipsize="end"
+        android:maxLines="3"
         android:textAppearance="@style/AppTheme.TextAppearance.List.Content.Secondary"
         tools:text="Map description"/>
 </LinearLayout>

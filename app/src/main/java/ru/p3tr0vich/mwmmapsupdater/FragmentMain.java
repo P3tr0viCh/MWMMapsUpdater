@@ -366,6 +366,46 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
         return new MapFilesLoader(getContext(), preferencesHelper.getMapsDir());
     }
 
+    @Nullable
+    private JSONObject getMapNamesAndDescriptions() {
+        String json = "";
+
+        try {
+            String language = Locale.getDefault().getLanguage();
+
+            if (!"ru".equals(language)) {
+                language = "en";
+            }
+
+            InputStream inputStream = getResources().getAssets().open(getString(R.string.countries_strings_json, language));
+
+            int size = inputStream.available();
+
+            byte[] buffer = new byte[size];
+
+            //noinspection ResultOfMethodCallIgnored
+            inputStream.read(buffer);
+
+            inputStream.close();
+
+            json = new String(buffer, "UTF-8");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        JSONObject jsonObject = null;
+
+        if (!json.isEmpty()) {
+            try {
+                jsonObject = new JSONObject(json);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return jsonObject;
+    }
+
     @Override
     public void onLoadFinished(Loader<MapFiles> loader, MapFiles data) {
         String mapDir = "<empty>";
@@ -400,37 +440,7 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
                 MapItem mapItem;
 
                 if (fileList != null) {
-                    String json = null;
-
-                    try {
-                        // TODO: 11.02.2017 en
-                        String countries = "countries-strings/ru.json/";
-
-                        InputStream is = getResources().getAssets().open(countries + "localize.json");
-
-                        int size = is.available();
-
-                        byte[] buffer = new byte[size];
-
-                        //noinspection ResultOfMethodCallIgnored
-                        is.read(buffer);
-
-                        is.close();
-
-                        json = new String(buffer, "UTF-8");
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                    JSONObject jsonObject = null;
-
-                    if (json != null && !json.isEmpty()) {
-                        try {
-                            jsonObject = new JSONObject(json);
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
+                    JSONObject namesAndDescriptions = getMapNamesAndDescriptions();
 
                     for (String fileName : fileList) {
                         mapItem = new MapItem(fileName);
@@ -438,10 +448,10 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
                         String name = fileName;
                         String description = null;
 
-                        if (jsonObject != null) {
+                        if (namesAndDescriptions != null) {
                             try {
-                                name = jsonObject.getString(fileName);
-                                description = jsonObject.getString(fileName + " Description");
+                                name = namesAndDescriptions.getString(fileName);
+                                description = namesAndDescriptions.getString(fileName + " Description");
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }

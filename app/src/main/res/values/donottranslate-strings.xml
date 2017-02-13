@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="countries_strings.json">countries-strings/%s.json/localize.json</string>
+</resources>
