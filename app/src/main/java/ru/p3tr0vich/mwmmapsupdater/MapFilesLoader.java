@@ -6,7 +6,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.content.AsyncTaskLoader;
 
 import ru.p3tr0vich.mwmmapsupdater.broadcastreceivers.BroadcastReceiverMapFilesLoading;
-import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesFindHelper;
+import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesLocalHelper;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
@@ -38,7 +38,7 @@ public class MapFilesLoader extends AsyncTaskLoader<MapFiles> {
         BroadcastReceiverMapFilesLoading.send(getContext(), true);
 
         try {
-            return MapFilesFindHelper.find(mMapDir);
+            return MapFilesLocalHelper.find(mMapDir);
         } finally {
             BroadcastReceiverMapFilesLoading.send(getContext(), false);
         }

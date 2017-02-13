@@ -36,6 +36,8 @@ import java.util.Random;
 
 import ru.p3tr0vich.mwmmapsupdater.broadcastreceivers.BroadcastReceiverMapFilesLoading;
 import ru.p3tr0vich.mwmmapsupdater.dummy.DummyMapVersion;
+import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesLocalHelper;
+import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesServerHelper;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
 import ru.p3tr0vich.mwmmapsupdater.models.MapItem;
 import ru.p3tr0vich.mwmmapsupdater.models.MapVersion;
@@ -350,6 +352,40 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
                     }
                 }
 
+                break;
+            case R.id.action_main_get_server_version:
+                MapFiles mapFiles = MapFilesLocalHelper.find(preferencesHelper.getMapsDir());
+
+                result = mapFiles.getResult() == MapFiles.RESULT_OK;
+
+                if (result) {
+                    List<String> fileList = mapFiles.getFileList();
+
+                    result = fileList != null;
+
+                    if (result) {
+                        Date mapDateLocal = null;
+                        try {
+                            mapDateLocal = MAP_SUB_DIR_DATE_FORMAT.parse(mapFiles.getMapSubDir());
+                        } catch (ParseException e) {
+                            e.printStackTrace();
+                        }
+
+                        Date date = MapFilesServerHelper.getVersion(fileList);
+
+                        if (date == null) {
+                            date = new Date();
+                        }
+
+                        MapVersion mapVersion = new MapVersion();
+                        mapVersion.setDateLocal(mapDateLocal);
+                        mapVersion.setDateServer(date);
+
+                        updateVersions(mapVersion);
+                    }
+                }
+
+                break;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -453,7 +489,7 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
                                 name = namesAndDescriptions.getString(fileName);
                                 description = namesAndDescriptions.getString(fileName + " Description");
                             } catch (JSONException e) {
-                                e.printStackTrace();
+//                                e.printStackTrace();
                             }
                         }
 

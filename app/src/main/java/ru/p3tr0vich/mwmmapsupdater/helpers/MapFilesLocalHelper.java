@@ -14,9 +14,9 @@ import java.util.regex.Pattern;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
-public class MapFilesFindHelper {
+public class MapFilesLocalHelper {
 
-    private static final String TAG = "MapFilesFindHelper";
+    private static final String TAG = "MapFilesLocalHelper";
 
     private static final boolean WAIT_ENABLED = false;
 
