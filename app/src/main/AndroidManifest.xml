@@ -3,6 +3,8 @@
           xmlns:tools="http://schemas.android.com/tools"
           package="ru.p3tr0vich.mwmmapsupdater">
 
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
     <application

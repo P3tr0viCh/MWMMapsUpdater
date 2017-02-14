@@ -1,7 +1,9 @@
 package ru.p3tr0vich.mwmmapsupdater;
 
 import android.content.Context;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
@@ -166,9 +168,21 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
         mBroadcastReceiverMapFilesLoading.register(getContext());
     }
 
+    private void updateTextDate(@NonNull TextView textView, @Nullable Date date) {
+        textView.setText(date != null ? DATE_FORMAT.format(date) : "null");
+    }
+
+    private void updateDateLocal(@Nullable Date date) {
+        updateTextDate(mTextDateLocal, date);
+    }
+
+    private void updateDateServer(@Nullable Date date) {
+        updateTextDate(mTextDateServer, date);
+    }
+
     private void updateVersions(MapVersion mapVersion) {
-        mTextDateLocal.setText(DATE_FORMAT.format(mapVersion.getDateLocal()));
-        mTextDateServer.setText(DATE_FORMAT.format(mapVersion.getDateServer()));
+        updateDateLocal(mapVersion.getDateLocal());
+        updateDateServer(mapVersion.getDateServer());
     }
 
     private void updateError(String mapDir) {
@@ -371,17 +385,9 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
                             e.printStackTrace();
                         }
 
-                        Date date = MapFilesServerHelper.getVersion(fileList);
+                        updateDateLocal(mapDateLocal);
 
-                        if (date == null) {
-                            date = new Date();
-                        }
-
-                        MapVersion mapVersion = new MapVersion();
-                        mapVersion.setDateLocal(mapDateLocal);
-                        mapVersion.setDateServer(date);
-
-                        updateVersions(mapVersion);
+                        new ServerGetVersionTask(fileList).execute();
                     }
                 }
 
@@ -391,6 +397,26 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
         }
 
         return result;
+    }
+
+    private class ServerGetVersionTask extends AsyncTask<Void, Void, Date> {
+
+        private final List<String> mFileList;
+
+        ServerGetVersionTask(@NonNull List<String> fileList) {
+            mFileList = fileList;
+        }
+
+        @Override
+        protected Date doInBackground(Void... params) {
+            return MapFilesServerHelper.getVersion(mFileList);
+        }
+
+        @Override
+        protected void onPostExecute(Date date) {
+            super.onPostExecute(date);
+            updateDateServer(date);
+        }
     }
 
     @Override
