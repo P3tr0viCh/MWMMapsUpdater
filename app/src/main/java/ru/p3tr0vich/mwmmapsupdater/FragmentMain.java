@@ -17,7 +17,12 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.RotateAnimation;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -35,14 +40,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import ru.p3tr0vich.mwmmapsupdater.broadcastreceivers.BroadcastReceiverMapFilesLoading;
-import ru.p3tr0vich.mwmmapsupdater.dummy.DummyMapVersion;
 import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesLocalHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesServerHelper;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
 import ru.p3tr0vich.mwmmapsupdater.models.MapItem;
-import ru.p3tr0vich.mwmmapsupdater.models.MapVersion;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsFiles;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
@@ -54,6 +58,12 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
 
     private static final int MAP_FILES_LOADER_ID = 0;
 
+    private static final long RECHECK_SERVER_MILLIS = BuildConfig.DEBUG ?
+            TimeUnit.SECONDS.toMillis(5) : TimeUnit.MINUTES.toMillis(10);
+
+    private static final String KEY_DATE_SERVER = "KEY_DATE_SERVER";
+    private static final String KEY_CHECK_SERVER_DATE_TIME = "KEY_CHECK_SERVER_DATE_TIME";
+
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy.MM.dd", Locale.getDefault());
     private static final DateFormat MAP_SUB_DIR_DATE_FORMAT = new SimpleDateFormat("yyMMdd", Locale.getDefault());
 
@@ -62,6 +72,12 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
 
     private TextView mTextDateLocal;
     private TextView mTextDateServer;
+
+    private ImageView mImgCheckServer;
+    private Animation mAnimationCheckServer;
+
+    private Date mDateServer;
+    private long mCheckServerDateTime;
 
     private MapItemRecyclerViewAdapter mMapItemRecyclerViewAdapter;
 
@@ -87,12 +103,17 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
             UtilsLog.d(TAG, "onCreate", "savedInstanceState " + (savedInstanceState == null ? "=" : "!") + "= null");
         }
 
+        initAnimationCheckServer();
         initMapFilesLoadingStatusReceiver();
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+        if (LOG_ENABLED) {
+            UtilsLog.d(TAG, "onCreateView", "savedInstanceState " + (savedInstanceState == null ? "=" : "!") + "= null");
+        }
+
         View view = inflater.inflate(R.layout.fragment_main, container, false);
 
         setHasOptionsMenu(true);
@@ -102,6 +123,19 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
 
         mTextDateLocal = (TextView) view.findViewById(R.id.text_date_local);
         mTextDateServer = (TextView) view.findViewById(R.id.text_date_server);
+
+        mImgCheckServer = (ImageView) view.findViewById(R.id.image_check_server);
+
+        view.findViewById(R.id.btn_check_server).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mCheckServerActive) {
+                    Toast.makeText(getContext(), R.string.text_check_server_active, Toast.LENGTH_SHORT).show();
+                } else {
+                    startCheckServer();
+                }
+            }
+        });
 
         Context context = view.getContext();
 
@@ -115,8 +149,6 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
 
         recyclerView.setAdapter(mMapItemRecyclerViewAdapter = new MapItemRecyclerViewAdapter(mListener));
-
-        updateVersions(DummyMapVersion.VERSION);
 
         view.findViewById(R.id.btn_retry_find_maps).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -140,6 +172,34 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
         }
 
         getLoaderManager().initLoader(MAP_FILES_LOADER_ID, null, this);
+
+        if (savedInstanceState == null) {
+            long dateServer = preferencesHelper.getDateServer();
+            mDateServer = dateServer == 0 ? null : new Date(dateServer);
+            mCheckServerDateTime = preferencesHelper.getCheckServerDateTime();
+        } else {
+            mDateServer = (Date) savedInstanceState.getSerializable(KEY_DATE_SERVER);
+            mCheckServerDateTime = savedInstanceState.getLong(KEY_CHECK_SERVER_DATE_TIME);
+        }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        if (((System.currentTimeMillis() - mCheckServerDateTime) > RECHECK_SERVER_MILLIS) || mDateServer == null) {
+            startCheckServer();
+        } else {
+            updateDateServer(mDateServer);
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putSerializable(KEY_DATE_SERVER, mDateServer);
+        outState.putLong(KEY_CHECK_SERVER_DATE_TIME, mCheckServerDateTime);
     }
 
     @Override
@@ -153,6 +213,14 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
         mBroadcastReceiverMapFilesLoading.unregister(getContext());
 
         super.onDestroy();
+    }
+
+    private void initAnimationCheckServer() {
+        mAnimationCheckServer = new RotateAnimation(360.0f, 0.0f,
+                Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        mAnimationCheckServer.setInterpolator(new LinearInterpolator());
+        mAnimationCheckServer.setDuration(getResources().getInteger(R.integer.animation_duration_check_server));
+        mAnimationCheckServer.setRepeatCount(Animation.INFINITE);
     }
 
     interface OnListFragmentInteractionListener {
@@ -169,7 +237,7 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
     }
 
     private void updateTextDate(@NonNull TextView textView, @Nullable Date date) {
-        textView.setText(date != null ? DATE_FORMAT.format(date) : "null");
+        textView.setText(date != null ? DATE_FORMAT.format(date) : getString(R.string.text_error_date_server_null));
     }
 
     private void updateDateLocal(@Nullable Date date) {
@@ -180,11 +248,6 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
         updateTextDate(mTextDateServer, date);
     }
 
-    private void updateVersions(MapVersion mapVersion) {
-        updateDateLocal(mapVersion.getDateLocal());
-        updateDateServer(mapVersion.getDateServer());
-    }
-
     private void updateError(String mapDir) {
         TextView textView = (TextView) mLayoutError.findViewById(R.id.text_date_mwm_maps_not_found_description);
         textView.setText(getString(R.string.text_error_mwm_maps_not_found_path, mapDir));
@@ -193,7 +256,9 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
-        inflater.inflate(R.menu.menu_main, menu);
+        if (BuildConfig.DEBUG) {
+            inflater.inflate(R.menu.menu_main, menu);
+        }
     }
 
     @Override
@@ -261,6 +326,7 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
 
                 break;
             case R.id.action_main_create_files:
+            case R.id.action_main_create_random_files:
                 listFiles = mapDir.listFiles();
 
                 List<String> subDirNamesList = new ArrayList<>();
@@ -315,79 +381,67 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
                 }
 
                 if (result) {
-                    File file;
-                    for (i = 0; i < 5; i++) {
-                        file = new File(mapSubDir, String.valueOf(i) + ".mwm");
+                    if (item.getItemId() == R.id.action_main_create_random_files) {
+                        File file;
+                        for (i = 0; i < 5; i++) {
+                            file = new File(mapSubDir, String.valueOf(i) + ".mwm");
+                            try {
+                                result = file.createNewFile();
+                            } catch (IOException e) {
+                                result = false;
+                            }
+
+                            if (!result) {
+                                break;
+                            }
+                        }
+                        for (i = 0; i < 5; i++) {
+                            file = new File(mapSubDir, String.valueOf(random.nextLong()) + ".mwm");
+                            try {
+                                result = file.createNewFile();
+                            } catch (IOException e) {
+                                result = false;
+                            }
+
+                            if (!result) {
+                                break;
+                            }
+                        }
+                        for (i = 0; i < 5; i++) {
+                            file = new File(mapSubDir, String.valueOf(random.nextLong()) + ".mwm2");
+                            try {
+                                result = file.createNewFile();
+                            } catch (IOException e) {
+                                result = false;
+                            }
+
+                            if (!result) {
+                                break;
+                            }
+                        }
+                        for (i = 5; i < 10; i++) {
+                            file = new File(mapSubDir, String.valueOf(i));
+                            try {
+                                result = file.createNewFile();
+                            } catch (IOException e) {
+                                result = false;
+                            }
+
+                            if (!result) {
+                                break;
+                            }
+                        }
+                    } else {
+                        File file1 = new File(mapSubDir, "Abkhazia.mwm");
+                        File file2 = new File(mapSubDir, "Russia_Orenburg Oblast.mwm");
+                        File file3 = new File(mapSubDir, "Russia_Omsk Oblast.mwm");
                         try {
-                            result = file.createNewFile();
+                            result = file1.createNewFile() &&
+                                    file2.createNewFile() &&
+                                    file3.createNewFile();
                         } catch (IOException e) {
                             result = false;
                         }
-
-                        if (!result) {
-                            break;
-                        }
-                    }
-                    for (i = 0; i < 5; i++) {
-                        file = new File(mapSubDir, String.valueOf(random.nextLong()) + ".mwm");
-                        try {
-                            result = file.createNewFile();
-                        } catch (IOException e) {
-                            result = false;
-                        }
-
-                        if (!result) {
-                            break;
-                        }
-                    }
-                    for (i = 0; i < 5; i++) {
-                        file = new File(mapSubDir, String.valueOf(random.nextLong()) + ".mwm2");
-                        try {
-                            result = file.createNewFile();
-                        } catch (IOException e) {
-                            result = false;
-                        }
-
-                        if (!result) {
-                            break;
-                        }
-                    }
-                    for (i = 5; i < 10; i++) {
-                        file = new File(mapSubDir, String.valueOf(i));
-                        try {
-                            result = file.createNewFile();
-                        } catch (IOException e) {
-                            result = false;
-                        }
-
-                        if (!result) {
-                            break;
-                        }
-                    }
-                }
-
-                break;
-            case R.id.action_main_get_server_version:
-                MapFiles mapFiles = MapFilesLocalHelper.find(preferencesHelper.getMapsDir());
-
-                result = mapFiles.getResult() == MapFiles.RESULT_OK;
-
-                if (result) {
-                    List<String> fileList = mapFiles.getFileList();
-
-                    result = fileList != null;
-
-                    if (result) {
-                        Date mapDateLocal = null;
-                        try {
-                            mapDateLocal = MAP_SUB_DIR_DATE_FORMAT.parse(mapFiles.getMapSubDir());
-                        } catch (ParseException e) {
-                            e.printStackTrace();
-                        }
-
-                        updateDateLocal(mapDateLocal);
-
-                        new ServerGetVersionTask(fileList).execute();
                     }
                 }
 
@@ -413,9 +467,30 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
         }
 
         @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            mCheckServerActive = true;
+
+            updateCheckServerStatus();
+
+            mCheckServerDateTime = System.currentTimeMillis();
+            preferencesHelper.putCheckServerDateTime(mCheckServerDateTime);
+        }
+
+        @Override
         protected void onPostExecute(Date date) {
             super.onPostExecute(date);
+
+            mCheckServerActive = false;
+
+            mDateServer = date;
+
             updateDateServer(date);
+
+            updateCheckServerStatus();
+
+            preferencesHelper.putDateServer(date != null ? date.getTime() : 0);
         }
     }
 
@@ -480,8 +555,6 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
             mapDir = data.getMapDir();
 
             if (data.getResult() == MapFiles.RESULT_OK) {
-                MapVersion mapVersion = new MapVersion();
-
                 Date mapDateLocal = null;
                 try {
                     // mapSubDir == '171232' ==> '180101';
@@ -490,10 +563,7 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
                     e.printStackTrace();
                 }
 
-                mapVersion.setDateLocal(mapDateLocal);
-                mapVersion.setDateServer(new Date());
-
-                updateVersions(mapVersion);
+                updateDateLocal(mapDateLocal);
 
                 List<MapItem> mapItems = new ArrayList<>();
 
@@ -548,5 +618,40 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
     @Override
     public void onLoaderReset(Loader<MapFiles> loader) {
         mMapItemRecyclerViewAdapter.swapItems(null);
+    }
+
+    private boolean mCheckServerActive = false;
+
+    private void updateCheckServerStatus() {
+        final boolean updateActive = mCheckServerActive;
+
+        if (updateActive) {
+            mImgCheckServer.startAnimation(mAnimationCheckServer);
+        } else {
+            mImgCheckServer.clearAnimation();
+        }
+    }
+
+    private void startCheckServer() {
+        MapFiles mapFiles = MapFilesLocalHelper.find(preferencesHelper.getMapsDir());
+
+        if (mapFiles.getResult() == MapFiles.RESULT_OK) {
+            List<String> fileList = mapFiles.getFileList();
+
+            if (fileList != null) {
+                Date mapDateLocal = null;
+                try {
+                    mapDateLocal = MAP_SUB_DIR_DATE_FORMAT.parse(mapFiles.getMapSubDir());
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+
+                updateDateLocal(mapDateLocal);
+
+                new ServerGetVersionTask(fileList).execute();
+            }
+        } else {
+            getLoaderManager().restartLoader(MAP_FILES_LOADER_ID, null, this);
+        }
     }
 }

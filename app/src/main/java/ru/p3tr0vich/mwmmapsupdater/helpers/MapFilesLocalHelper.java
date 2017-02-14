@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
@@ -34,7 +35,7 @@ public class MapFilesLocalHelper {
 
     @NonNull
     public static MapFiles find(@NonNull String mapDirName) {
-        if (WAIT_ENABLED) {
+        if (BuildConfig.DEBUG && WAIT_ENABLED) {
             for (int i = 0, waitSeconds = 3; i < waitSeconds; i++) {
                 try {
                     TimeUnit.SECONDS.sleep(1);

@@ -22,11 +22,11 @@
         android:title="delete all mwm sub dirs"
         tools:ignore="HardcodedText"/>
     <item
-        android:id="@+id/action_main_create_files"
-        android:title="create files"
+        android:id="@+id/action_main_create_random_files"
+        android:title="create random files"
         tools:ignore="HardcodedText"/>
     <item
-        android:id="@+id/action_main_get_server_version"
-        android:title="get server version"
+        android:id="@+id/action_main_create_files"
+        android:title="create mwm files"
         tools:ignore="HardcodedText"/>
-</menu>
+ </menu>

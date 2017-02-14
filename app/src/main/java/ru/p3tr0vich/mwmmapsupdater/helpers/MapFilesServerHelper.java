@@ -16,13 +16,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
+import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
 public class MapFilesServerHelper {
 
     private static final String TAG = "MapFilesServerHelper";
+
+    private static final boolean DUMMY_FILE_INFO = true;
+    private static final boolean FILE_INFO_WAIT_ENABLED = false;
 
     private static final String PROTOCOL = "http";
     private static final String HOST = "direct.mapswithme.com";
@@ -61,43 +67,61 @@ public class MapFilesServerHelper {
 
     @Nullable
     private static FileInfo getFileInfo(@NonNull String mapName) {
-        URL url = getUrl(mapName);
 
-        if (url == null) {
-            return null;
+        if (BuildConfig.DEBUG && FILE_INFO_WAIT_ENABLED) {
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
-        try {
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        long lastModified;
 
-            long lastModified = 0;
+        if (BuildConfig.DEBUG && DUMMY_FILE_INFO) {
+            Random rand = new Random();
 
-            try {
-                lastModified = connection.getLastModified();
-            } finally {
-                connection.disconnect();
-            }
+            lastModified = -946771200000L + (Math.abs(rand.nextLong()) % (70L * 365 * 24 * 60 * 60 * 1000));
+        } else {
+            URL url = getUrl(mapName);
 
-            if (lastModified == 0) {
+            if (url == null) {
+                UtilsLog.e(TAG, "getFileInfo", "url == null");
                 return null;
             }
 
-            return new FileInfo(new Date(lastModified));
-        } catch (IOException e) {
-            e.printStackTrace();
+            HttpURLConnection connection;
+            try {
+                connection = (HttpURLConnection) url.openConnection();
+            } catch (IOException e) {
+                e.printStackTrace();
+                UtilsLog.e(TAG, "getFileInfo", "openConnection IOException == " + e.toString());
+                return null;
+            }
+
+            try {
+                connection.connect();
+                lastModified = connection.getLastModified();
+                connection.disconnect();
+            } catch (IOException e) {
+                e.printStackTrace();
+                UtilsLog.e(TAG, "getFileInfo", "connect IOException == " + e.toString());
+                return null;
+            }
+
         }
 
-        return null;
+        if (lastModified == 0) {
+            UtilsLog.e(TAG, "getFileInfo", "lastModified == 0");
+            return null;
+        }
+
+        return new FileInfo(new Date(lastModified));
     }
 
     @NonNull
     private static Map<String, FileInfo> getMapsInfo(@NonNull List<String> mapNames) {
         Map<String, FileInfo> fileInfoMap = new HashMap<>();
-
-        mapNames.clear();
-        mapNames.add("Abkhazia");
-        mapNames.add("Russia_Orenburg Oblast");
-        mapNames.add("Russia_Omsk Oblast");
 
         for (String mapName : mapNames) {
             FileInfo fileInfo = getFileInfo(mapName);
@@ -116,8 +140,17 @@ public class MapFilesServerHelper {
         DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
     }
 
-    public static Date getVersion(@NonNull List<String> fileList) {
-        Map<String, FileInfo> fileInfoMap = getMapsInfo(fileList);
+    @Nullable
+    public static Date getVersion(@NonNull List<String> mapNames) {
+        if (BuildConfig.DEBUG && DUMMY_FILE_INFO) {
+            Random rand = new Random();
+
+            if (rand.nextBoolean()) {
+                return null;
+            }
+        }
+
+        Map<String, FileInfo> fileInfoMap = getMapsInfo(mapNames);
 
         List<Date> dates = new ArrayList<>();
 

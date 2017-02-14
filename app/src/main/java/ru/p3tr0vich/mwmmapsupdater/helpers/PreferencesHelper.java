@@ -34,7 +34,7 @@ public class PreferencesHelper {
 
     public static class Keys {
         @Retention(RetentionPolicy.SOURCE)
-        @IntDef({UNKNOWN, MAPS_DIR})
+        @IntDef({UNKNOWN, MAPS_DIR, DATE_SERVER, CHECK_SERVER_DATE_TIME})
         public @interface KeyAsInt {
         }
 
@@ -43,13 +43,23 @@ public class PreferencesHelper {
         public final String mapsDir;
         public static final int MAPS_DIR = R.string.pref_key_maps_dir;
 
+        public final String dateServer;
+        public static final int DATE_SERVER = R.string.pref_key_date_server;
+        public final String checkServerDateTime;
+        public static final int CHECK_SERVER_DATE_TIME = R.string.pref_key_check_server_date_time;
+
         private Keys(@NonNull Context context) {
-            mapsDir = context.getString(R.string.pref_key_maps_dir);
+            mapsDir = context.getString(MAPS_DIR);
+
+            dateServer = context.getString(DATE_SERVER);
+            checkServerDateTime = context.getString(CHECK_SERVER_DATE_TIME);
         }
 
         @KeyAsInt
         public int getAsInt(@Nullable String key) {
             if (mapsDir.equals(key)) return MAPS_DIR;
+            if (dateServer.equals(key)) return DATE_SERVER;
+            if (checkServerDateTime.equals(key)) return CHECK_SERVER_DATE_TIME;
             else return UNKNOWN;
         }
     }
@@ -90,5 +100,27 @@ public class PreferencesHelper {
             DirName = Dir.getAbsolutePath();
         }
         return DirName;
+    }
+
+    public long getDateServer() {
+        return mSharedPreferences.getLong(keys.dateServer, 0);
+    }
+
+    public void putDateServer(long date) {
+        mSharedPreferences
+                .edit()
+                .putLong(keys.dateServer, date)
+                .apply();
+    }
+
+    public long getCheckServerDateTime() {
+        return mSharedPreferences.getLong(keys.checkServerDateTime, 0);
+    }
+
+    public void putCheckServerDateTime(long dateTime) {
+        mSharedPreferences
+                .edit()
+                .putLong(keys.checkServerDateTime, dateTime)
+                .apply();
     }
 }

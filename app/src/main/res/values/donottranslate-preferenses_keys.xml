@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="pref_key_maps_dir" translatable="false">maps_dir</string>
+
+    <string name="pref_key_date_server" translatable="false">date_server</string>
+    <string name="pref_key_check_server_date_time" translatable="false">check_server_date_time</string>
 </resources>

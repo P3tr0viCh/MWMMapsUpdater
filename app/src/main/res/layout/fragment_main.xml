@@ -44,61 +44,87 @@
         android:id="@+id/layout_main"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical"
-        >
+        android:orientation="vertical">
 
-        <TableLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:orientation="horizontal"
             android:paddingBottom="@dimen/map_version_padding_bottom"
             android:paddingEnd="@dimen/map_version_padding_end"
             android:paddingStart="@dimen/map_version_padding_start"
             android:paddingTop="@dimen/map_version_padding_top">
 
-            <TableRow
+            <TableLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginBottom="@dimen/map_version_row_margin_bottom"
+                    android:layout_marginTop="@dimen/map_version_row_margin_top">
+
+                    <TextView
+                        android:id="@+id/text_date_local_label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/map_version_label_margin_end"
+                        android:text="@string/text_map_item_date_local"
+                        android:textAppearance="@style/AppTheme.TextAppearance.Text.Secondary"/>
+
+                    <TextView
+                        android:id="@+id/text_date_local"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/AppTheme.TextAppearance.Text"
+                        tools:text="1981.03.29"/>
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_marginBottom="@dimen/map_version_row_margin_bottom"
+                    android:layout_marginTop="@dimen/map_version_row_margin_top">
+
+                    <TextView
+                        android:id="@+id/text_date_server_label"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/map_version_label_margin_end"
+                        android:text="@string/text_map_item_date_server"
+                        android:textAppearance="@style/AppTheme.TextAppearance.Text.Secondary"/>
+
+                    <TextView
+                        android:id="@+id/text_date_server"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/AppTheme.TextAppearance.Text"
+                        tools:text="2017.02.05"/>
+                </TableRow>
+            </TableLayout>
+
+            <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginBottom="@dimen/map_version_row_margin_bottom"
-                android:layout_marginTop="@dimen/map_version_row_margin_top">
+                android:layout_height="match_parent">
 
-                <TextView
-                    android:id="@+id/text_date_local_label"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="@dimen/map_version_label_margin_end"
-                    android:text="@string/text_map_item_date_local"
-                    android:textAppearance="@style/AppTheme.TextAppearance.Text.Secondary"/>
+                <Button
+                    android:id="@+id/btn_check_server"
+                    android:layout_width="@dimen/map_progress_btn_size"
+                    android:layout_height="@dimen/map_progress_btn_size"
+                    android:layout_gravity="center_vertical|end"
+                    android:background="?attr/selectableItemBackground"/>
 
-                <TextView
-                    android:id="@+id/text_date_local"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="@style/AppTheme.TextAppearance.Text"
-                    tools:text="1981.03.29"/>
-            </TableRow>
-
-            <TableRow
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginBottom="@dimen/map_version_row_margin_bottom"
-                android:layout_marginTop="@dimen/map_version_row_margin_top">
-
-                <TextView
-                    android:id="@+id/text_date_server_label"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="@dimen/map_version_label_margin_end"
-                    android:text="@string/text_map_item_date_server"
-                    android:textAppearance="@style/AppTheme.TextAppearance.Text.Secondary"/>
-
-                <TextView
-                    android:id="@+id/text_date_server"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="@style/AppTheme.TextAppearance.Text"
-                    tools:text="2017.02.05"/>
-            </TableRow>
-        </TableLayout>
+                <ImageView
+                    android:id="@+id/image_check_server"
+                    android:layout_width="@dimen/map_progress_btn_size"
+                    android:layout_height="@dimen/map_progress_btn_size"
+                    android:layout_gravity="center_vertical|end"
+                    android:scaleType="center"
+                    android:src="@drawable/ic_sync"
+                    tools:ignore="ContentDescription"/>
+            </FrameLayout>
+        </LinearLayout>
 
         <View
             style="@style/AppTheme.Divider.Horizontal"/>
