@@ -27,7 +27,9 @@ public class MapFilesServerHelper {
 
     private static final String TAG = "MapFilesServerHelper";
 
-    private static final boolean DUMMY_FILE_INFO = true;
+    private static final boolean LOG_ENABLED = true;
+
+    private static final boolean DUMMY_FILE_INFO = false;
     private static final boolean FILE_INFO_WAIT_ENABLED = false;
 
     private static final String PROTOCOL = "http";
@@ -93,6 +95,8 @@ public class MapFilesServerHelper {
             HttpURLConnection connection;
             try {
                 connection = (HttpURLConnection) url.openConnection();
+
+                connection.setRequestMethod("HEAD");
             } catch (IOException e) {
                 e.printStackTrace();
                 UtilsLog.e(TAG, "getFileInfo", "openConnection IOException == " + e.toString());
@@ -101,7 +105,9 @@ public class MapFilesServerHelper {
 
             try {
                 connection.connect();
+
                 lastModified = connection.getLastModified();
+
                 connection.disconnect();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -123,13 +129,19 @@ public class MapFilesServerHelper {
     private static Map<String, FileInfo> getMapsInfo(@NonNull List<String> mapNames) {
         Map<String, FileInfo> fileInfoMap = new HashMap<>();
 
+        UtilsLog.d(LOG_ENABLED, TAG, "getMapsInfo", "start");
+
         for (String mapName : mapNames) {
             FileInfo fileInfo = getFileInfo(mapName);
+
+            UtilsLog.d(LOG_ENABLED, TAG, "getMapsInfo", "fileInfo == " + fileInfo);
 
             if (fileInfo != null) {
                 fileInfoMap.put(mapName, fileInfo);
             }
         }
+
+        UtilsLog.d(LOG_ENABLED, TAG, "getMapsInfo", "end");
 
         return fileInfoMap;
     }
@@ -155,17 +167,17 @@ public class MapFilesServerHelper {
         List<Date> dates = new ArrayList<>();
 
         for (Map.Entry<String, FileInfo> entry : fileInfoMap.entrySet()) {
-            UtilsLog.d(TAG, "getVersion", entry.getKey() + " = " + DATE_FORMAT.format(entry.getValue().getDate()));
-
             dates.add(entry.getValue().getDate());
         }
 
         if (dates.isEmpty()) {
+            UtilsLog.d(LOG_ENABLED, TAG, "getVersion", "return null");
+
             return null;
         } else {
             Collections.sort(dates);
 
-            UtilsLog.d(TAG, "getVersion", "return " + DATE_FORMAT.format(dates.get(0)));
+            UtilsLog.d(LOG_ENABLED, TAG, "getVersion", "return " + dates.get(0));
 
             return dates.get(0);
         }

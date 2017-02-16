@@ -1,4 +1,4 @@
-package ru.p3tr0vich.mwmmapsupdater;
+package ru.p3tr0vich.mwmmapsupdater.adapters;
 
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
@@ -11,11 +11,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ru.p3tr0vich.mwmmapsupdater.FragmentMain.OnListFragmentInteractionListener;
+import ru.p3tr0vich.mwmmapsupdater.R;
 import ru.p3tr0vich.mwmmapsupdater.models.MapItem;
 
 public class MapItemRecyclerViewAdapter extends RecyclerView.Adapter<MapItemRecyclerViewAdapter.ViewHolder> {
 
     private final List<MapItem> mValues;
+
     private final OnListFragmentInteractionListener mListener;
 
     public MapItemRecyclerViewAdapter(OnListFragmentInteractionListener listener) {

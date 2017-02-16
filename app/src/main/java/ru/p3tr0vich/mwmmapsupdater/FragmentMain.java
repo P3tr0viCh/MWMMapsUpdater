@@ -1,7 +1,8 @@
 package ru.p3tr0vich.mwmmapsupdater;
 
+import android.content.ContentResolver;
 import android.content.Context;
-import android.os.AsyncTask;
+import android.content.SyncStatusObserver;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -11,6 +12,7 @@ import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -42,15 +44,18 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
+import ru.p3tr0vich.mwmmapsupdater.adapters.MapItemRecyclerViewAdapter;
 import ru.p3tr0vich.mwmmapsupdater.broadcastreceivers.BroadcastReceiverMapFilesLoading;
-import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesLocalHelper;
-import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesServerHelper;
+import ru.p3tr0vich.mwmmapsupdater.helpers.ContentResolverHelper;
+import ru.p3tr0vich.mwmmapsupdater.helpers.SyncAccountHelper;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
 import ru.p3tr0vich.mwmmapsupdater.models.MapItem;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsFiles;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
-public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCallbacks<MapFiles> {
+public class FragmentMain extends FragmentBase implements
+        LoaderManager.LoaderCallbacks<MapFiles>,
+        SyncStatusObserver {
 
     private static final String TAG = "FragmentMain";
 
@@ -85,6 +90,9 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
 
     private BroadcastReceiverMapFilesLoading mBroadcastReceiverMapFilesLoading;
 
+    private SyncAccountHelper mSyncAccountHelper;
+    private Object mSyncMonitor;
+
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
@@ -99,9 +107,9 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        if (LOG_ENABLED) {
-            UtilsLog.d(TAG, "onCreate", "savedInstanceState " + (savedInstanceState == null ? "=" : "!") + "= null");
-        }
+        UtilsLog.d(LOG_ENABLED, TAG, "onCreate", "savedInstanceState " + (savedInstanceState == null ? "=" : "!") + "= null");
+
+        mSyncAccountHelper = SyncAccountHelper.getInstance(getContext());
 
         initAnimationCheckServer();
         initMapFilesLoadingStatusReceiver();
@@ -110,9 +118,7 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        if (LOG_ENABLED) {
-            UtilsLog.d(TAG, "onCreateView", "savedInstanceState " + (savedInstanceState == null ? "=" : "!") + "= null");
-        }
+        UtilsLog.d(LOG_ENABLED, TAG, "onCreateView", "savedInstanceState " + (savedInstanceState == null ? "=" : "!") + "= null");
 
         View view = inflater.inflate(R.layout.fragment_main, container, false);
 
@@ -129,10 +135,10 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
         view.findViewById(R.id.btn_check_server).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (mCheckServerActive) {
+                if (mSyncAccountHelper.isSyncActive()) {
                     Toast.makeText(getContext(), R.string.text_check_server_active, Toast.LENGTH_SHORT).show();
                 } else {
-                    startCheckServer();
+                    ContentResolverHelper.requestSync(getContext());
                 }
             }
         });
@@ -167,9 +173,7 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
-        if (LOG_ENABLED) {
-            UtilsLog.d(TAG, "onActivityCreated", "savedInstanceState " + (savedInstanceState == null ? "=" : "!") + "= null");
-        }
+        UtilsLog.d(LOG_ENABLED, TAG, "onActivityCreated", "savedInstanceState " + (savedInstanceState == null ? "=" : "!") + "= null");
 
         getLoaderManager().initLoader(MAP_FILES_LOADER_ID, null, this);
 
@@ -187,11 +191,24 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
     public void onStart() {
         super.onStart();
 
+        UtilsLog.d(LOG_ENABLED, TAG, "onStart");
+
+        mSyncMonitor = ContentResolver.addStatusChangeListener(ContentResolver.SYNC_OBSERVER_TYPE_ACTIVE, this);
+
         if (((System.currentTimeMillis() - mCheckServerDateTime) > RECHECK_SERVER_MILLIS) || mDateServer == null) {
-            startCheckServer();
+            ContentResolverHelper.requestSync(getContext());
         } else {
             updateDateServer(mDateServer);
         }
+    }
+
+    @Override
+    public void onStop() {
+        UtilsLog.d(LOG_ENABLED, TAG, "onStop");
+
+        ContentResolver.removeStatusChangeListener(mSyncMonitor);
+
+        super.onStop();
     }
 
     @Override
@@ -223,7 +240,7 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
         mAnimationCheckServer.setRepeatCount(Animation.INFINITE);
     }
 
-    interface OnListFragmentInteractionListener {
+    public interface OnListFragmentInteractionListener {
         void onListFragmentInteraction(MapItem item);
     }
 
@@ -302,7 +319,7 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
                 }
                 mapSubDirName += String.valueOf(i);
 
-                UtilsLog.d(TAG, "create sub dir", mapSubDirName);
+                UtilsLog.d(LOG_ENABLED, TAG, "create sub dir", mapSubDirName);
 
                 File mapSubDir = new File(mapDir, mapSubDirName);
 
@@ -317,7 +334,7 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
                 if (listFiles != null) {
                     for (File file : listFiles) {
                         if (result && file.isDirectory()) {
-                            UtilsLog.d(TAG, "delete sub dir", file.getName());
+                            UtilsLog.d(LOG_ENABLED, TAG, "delete sub dir", file.getName());
 
                             result = UtilsFiles.deleteAll(file);
                         }
@@ -358,7 +375,7 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
                     }
                     mapSubDirName += String.valueOf(i);
 
-                    UtilsLog.d(TAG, "create sub dir", mapSubDirName);
+                    UtilsLog.d(LOG_ENABLED, TAG, "create sub dir", mapSubDirName);
 
                     mapSubDir = new File(mapDir, mapSubDirName);
 
@@ -373,7 +390,7 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
 
                     mapSubDirName = subDirNamesList.get(0);
 
-                    UtilsLog.d(TAG, "use existing sub dir", mapSubDirName);
+                    UtilsLog.d(LOG_ENABLED, TAG, "use existing sub dir", mapSubDirName);
 
                     mapSubDir = new File(mapDir, mapSubDirName);
 
@@ -453,52 +470,50 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
         return result;
     }
 
-    private class ServerGetVersionTask extends AsyncTask<Void, Void, Date> {
-
-        private final List<String> mFileList;
-
-        ServerGetVersionTask(@NonNull List<String> fileList) {
-            mFileList = fileList;
-        }
-
-        @Override
-        protected Date doInBackground(Void... params) {
-            return MapFilesServerHelper.getVersion(mFileList);
-        }
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            mCheckServerActive = true;
-
-            updateCheckServerStatus();
-
-            mCheckServerDateTime = System.currentTimeMillis();
-            preferencesHelper.putCheckServerDateTime(mCheckServerDateTime);
-        }
-
-        @Override
-        protected void onPostExecute(Date date) {
-            super.onPostExecute(date);
-
-            mCheckServerActive = false;
-
-            mDateServer = date;
-
-            updateDateServer(date);
-
-            updateCheckServerStatus();
-
-            preferencesHelper.putDateServer(date != null ? date.getTime() : 0);
-        }
-    }
+//    private class ServerGetVersionTask extends AsyncTask<Void, Void, Date> {
+//
+//        private final List<String> mFileList;
+//
+//        ServerGetVersionTask(@NonNull List<String> fileList) {
+//            mFileList = fileList;
+//        }
+//
+//        @Override
+//        protected Date doInBackground(Void... params) {
+//            return MapFilesServerHelper.getVersion(mFileList);
+//        }
+//
+//        @Override
+//        protected void onPreExecute() {
+//            super.onPreExecute();
+//
+////            mCheckServerActive = true;
+//
+//            updateCheckServerStatus();
+//
+//            mCheckServerDateTime = System.currentTimeMillis();
+//            preferencesHelper.putCheckServerDateTime(mCheckServerDateTime);
+//        }
+//
+//        @Override
+//        protected void onPostExecute(Date date) {
+//            super.onPostExecute(date);
+//
+////            mCheckServerActive = false;
+//
+//            mDateServer = date;
+//
+//            updateDateServer(date);
+//
+//            updateCheckServerStatus();
+//
+//            preferencesHelper.putDateServer(date != null ? date.getTime() : 0);
+//        }
+//    }
 
     @Override
     public Loader<MapFiles> onCreateLoader(int id, Bundle args) {
-        if (LOG_ENABLED) {
-            UtilsLog.d(TAG, "onCreateLoader");
-        }
+        UtilsLog.d(LOG_ENABLED, TAG, "onCreateLoader");
 
         return new MapFilesLoader(getContext(), preferencesHelper.getMapsDir());
     }
@@ -545,11 +560,9 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
 
     @Override
     public void onLoadFinished(Loader<MapFiles> loader, MapFiles data) {
-        String mapDir = "<empty>";
+        String mapDir = null;
 
-        if (LOG_ENABLED) {
-            UtilsLog.d(TAG, "onLoadFinished", "data == " + data);
-        }
+        UtilsLog.d(LOG_ENABLED, TAG, "onLoadFinished", "data == " + data);
 
         if (data != null) {
             mapDir = data.getMapDir();
@@ -609,6 +622,9 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
 
         mMapItemRecyclerViewAdapter.swapItems(null);
 
+        if (TextUtils.isEmpty(mapDir)) {
+            mapDir = getString(R.string.text_error_mwm_maps_empty_path);
+        }
         updateError(mapDir);
 
         mLayoutMain.setVisibility(View.GONE);
@@ -620,10 +636,8 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
         mMapItemRecyclerViewAdapter.swapItems(null);
     }
 
-    private boolean mCheckServerActive = false;
-
     private void updateCheckServerStatus() {
-        final boolean updateActive = mCheckServerActive;
+        final boolean updateActive = mSyncAccountHelper.isSyncActive();
 
         if (updateActive) {
             mImgCheckServer.startAnimation(mAnimationCheckServer);
@@ -632,26 +646,13 @@ public class FragmentMain extends FragmentBase implements LoaderManager.LoaderCa
         }
     }
 
-    private void startCheckServer() {
-        MapFiles mapFiles = MapFilesLocalHelper.find(preferencesHelper.getMapsDir());
-
-        if (mapFiles.getResult() == MapFiles.RESULT_OK) {
-            List<String> fileList = mapFiles.getFileList();
-
-            if (fileList != null) {
-                Date mapDateLocal = null;
-                try {
-                    mapDateLocal = MAP_SUB_DIR_DATE_FORMAT.parse(mapFiles.getMapSubDir());
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
-
-                updateDateLocal(mapDateLocal);
-
-                new ServerGetVersionTask(fileList).execute();
+    @Override
+    public void onStatusChanged(int which) {
+        getActivity().runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                updateCheckServerStatus();
             }
-        } else {
-            getLoaderManager().restartLoader(MAP_FILES_LOADER_ID, null, this);
-        }
+        });
     }
 }

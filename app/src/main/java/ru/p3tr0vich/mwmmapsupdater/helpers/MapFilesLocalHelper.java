@@ -42,7 +42,7 @@ public class MapFilesLocalHelper {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                UtilsLog.d(TAG, "findFiles", "wait... " + (waitSeconds - i));
+                UtilsLog.d(true, TAG, "findFiles", "wait... " + (waitSeconds - i));
             }
         }
 

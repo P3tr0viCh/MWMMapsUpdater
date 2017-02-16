@@ -22,8 +22,8 @@ public class UtilsLog {
         return msg;
     }
 
-    public static void d(@Nullable String tag, @NonNull String msg, @Nullable String extMsg) {
-        if (BuildConfig.DEBUG) {
+    public static void d(boolean show, @Nullable String tag, @NonNull String msg, @Nullable String extMsg) {
+        if (show && BuildConfig.DEBUG) {
             Log.d(LOG_TAG, formatMsg(tag, msg, extMsg));
         }
     }
@@ -32,19 +32,19 @@ public class UtilsLog {
         Log.e(LOG_TAG, formatMsg(tag, msg, extMsg));
     }
 
-    public static void d(@NonNull String tag, @NonNull String msg) {
-        d(tag, msg, null);
+    public static void d(boolean show, @NonNull String tag, @NonNull String msg) {
+        d(show, tag, msg, null);
     }
 
-    public static void d(@NonNull Object o, @NonNull String msg, @Nullable String extMsg) {
-        d(o.getClass(), msg, extMsg);
+    public static void d(boolean show, @NonNull Object o, @NonNull String msg, @Nullable String extMsg) {
+        d(show, o.getClass(), msg, extMsg);
     }
 
-    public static void d(@NonNull Object o, @NonNull String msg) {
-        d(o, msg, null);
+    public static void d(boolean show, @NonNull Object o, @NonNull String msg) {
+        d(show, o, msg, null);
     }
 
-    public static void d(@NonNull Class aClass, @NonNull String msg, @Nullable String extMsg) {
-        d(aClass.getSimpleName(), msg, extMsg);
+    public static void d(boolean show, @NonNull Class aClass, @NonNull String msg, @Nullable String extMsg) {
+        d(show, aClass.getSimpleName(), msg, extMsg);
     }
 }

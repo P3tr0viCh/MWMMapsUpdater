@@ -31,9 +31,7 @@ public class MapFilesLoader extends AsyncTaskLoader<MapFiles> {
     @Override
     @Nullable
     public MapFiles loadInBackground() {
-        if (LOG_ENABLED) {
-            UtilsLog.d(TAG, "loadInBackground");
-        }
+        UtilsLog.d(LOG_ENABLED, TAG, "loadInBackground");
 
         BroadcastReceiverMapFilesLoading.send(getContext(), true);
 

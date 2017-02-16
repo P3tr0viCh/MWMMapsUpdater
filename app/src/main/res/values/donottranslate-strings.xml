@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="countries_strings.json">countries-strings/%s.json/localize.json</string>
+
+    <string name="sync_authority" translatable="false">ru.p3tr0vich.mwmmapsupdater.provider</string>
+    <string name="sync_account_name" translatable="false">Sync</string>
+    <string name="sync_account_type" translatable="false">ru.p3tr0vich.mwmmapsupdater</string>
 </resources>
