@@ -2,7 +2,6 @@ package ru.p3tr0vich.mwmmapsupdater;
 
 import android.content.ContentProvider;
 import android.content.ContentResolver;
-import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.UriMatcher;
 import android.database.Cursor;
@@ -37,11 +36,19 @@ public class AppContentProvider extends ContentProvider {
     }
 
     private static class UriPath {
+        private static final String SYNC_PROGRESS = "sync_progress";
+        private static final String SYNC_PROGRESS_DATE_CHECKED = SYNC_PROGRESS + "/date_checked";
+        private static final String SYNC_PROGRESS_DATE_CHECKED_ITEM = SYNC_PROGRESS_DATE_CHECKED + "/*";
+
         private static final String PREFERENCES = "preferences";
         private static final String PREFERENCES_ITEM = PREFERENCES + "/*";
     }
 
+    public static final Uri URI_SYNC_PROGRESS_DATE_CHECKED = BaseUri.getUri(UriPath.SYNC_PROGRESS_DATE_CHECKED);
+
     public static final Uri URI_PREFERENCES = BaseUri.getUri(UriPath.PREFERENCES);
+
+    public static final int SYNC_PROGRESS_DATE_CHECKED_ITEM = 20;
 
     private static final int PREFERENCES = 30;
     private static final int PREFERENCES_ITEM = 31;
@@ -49,6 +56,8 @@ public class AppContentProvider extends ContentProvider {
     private static final UriMatcher sURIMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
     static {
+        sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.SYNC_PROGRESS_DATE_CHECKED_ITEM, SYNC_PROGRESS_DATE_CHECKED_ITEM);
+
         sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.PREFERENCES, PREFERENCES);
         sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.PREFERENCES_ITEM, PREFERENCES_ITEM);
     }

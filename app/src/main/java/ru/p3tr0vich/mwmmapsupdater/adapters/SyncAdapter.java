@@ -6,6 +6,7 @@ import android.content.ContentProviderClient;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SyncResult;
+import android.net.Uri;
 import android.nfc.FormatException;
 import android.os.Bundle;
 import android.os.RemoteException;
@@ -17,6 +18,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import ru.p3tr0vich.mwmmapsupdater.AppContentProvider;
 import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
 import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesLocalHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesServerHelper;
@@ -60,6 +62,11 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                 String mapDirName = providerPreferencesHelper.getMapsDir();
 
                 Date date = getMapsVersion(mapDirName);
+
+                Uri uri = Uri.withAppendedPath(AppContentProvider.URI_SYNC_PROGRESS_DATE_CHECKED,
+                        date != null ? String.valueOf(date.getTime()) : "");
+
+                getContext().getContentResolver().notifyChange(uri, null, false);
 
                 providerPreferencesHelper.putDateServer(date != null ? date.getTime() : 0);
 

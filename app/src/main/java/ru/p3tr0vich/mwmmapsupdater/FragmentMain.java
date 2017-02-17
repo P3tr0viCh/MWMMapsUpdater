@@ -3,7 +3,11 @@ package ru.p3tr0vich.mwmmapsupdater;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SyncStatusObserver;
+import android.database.ContentObserver;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.LoaderManager;
@@ -90,6 +94,8 @@ public class FragmentMain extends FragmentBase implements
 
     private BroadcastReceiverMapFilesLoading mBroadcastReceiverMapFilesLoading;
 
+    private ContentObserver mObserver;
+
     private SyncAccountHelper mSyncAccountHelper;
     private Object mSyncMonitor;
 
@@ -112,7 +118,9 @@ public class FragmentMain extends FragmentBase implements
         mSyncAccountHelper = SyncAccountHelper.getInstance(getContext());
 
         initAnimationCheckServer();
+
         initMapFilesLoadingStatusReceiver();
+        initSyncProgressObserver();
     }
 
     @Override
@@ -227,6 +235,8 @@ public class FragmentMain extends FragmentBase implements
 
     @Override
     public void onDestroy() {
+//        mBroadcastReceiverSyncProgress.unregister(getContext());
+        getContext().getContentResolver().unregisterContentObserver(mObserver);
         mBroadcastReceiverMapFilesLoading.unregister(getContext());
 
         super.onDestroy();
@@ -251,6 +261,43 @@ public class FragmentMain extends FragmentBase implements
             }
         };
         mBroadcastReceiverMapFilesLoading.register(getContext());
+    }
+
+    private void initSyncProgressObserver() {
+        mObserver = new ContentObserver(new Handler(Looper.getMainLooper())) {
+
+            @Override
+            public void onChange(boolean selfChange, Uri uri) {
+                UtilsLog.d(true, "ContentObserver", "onChange", "uri == " + uri);
+
+                if (uri != null) {
+                    switch (AppContentProvider.uriMatch(uri)) {
+                        case AppContentProvider.SYNC_PROGRESS_DATE_CHECKED_ITEM:
+                            String lastPath = uri.getLastPathSegment();
+
+                            UtilsLog.d(true, "ContentObserver", "onChange", "lastPath == " + lastPath);
+
+                            Date date;
+                            if (TextUtils.isEmpty(lastPath)) {
+                                date = null;
+                            } else {
+                                date = new Date(Long.parseLong(lastPath));
+                            }
+
+                            mDateServer = date;
+                            updateDateServer(date);
+
+                            break;
+                    }
+                }
+            }
+
+            public void onChange(boolean selfChange) {
+                onChange(selfChange, null);
+            }
+        };
+        getContext().getContentResolver().registerContentObserver(
+                AppContentProvider.URI_SYNC_PROGRESS_DATE_CHECKED, true, mObserver);
     }
 
     private void updateTextDate(@NonNull TextView textView, @Nullable Date date) {
@@ -469,47 +516,6 @@ public class FragmentMain extends FragmentBase implements
 
         return result;
     }
-
-//    private class ServerGetVersionTask extends AsyncTask<Void, Void, Date> {
-//
-//        private final List<String> mFileList;
-//
-//        ServerGetVersionTask(@NonNull List<String> fileList) {
-//            mFileList = fileList;
-//        }
-//
-//        @Override
-//        protected Date doInBackground(Void... params) {
-//            return MapFilesServerHelper.getVersion(mFileList);
-//        }
-//
-//        @Override
-//        protected void onPreExecute() {
-//            super.onPreExecute();
-//
-////            mCheckServerActive = true;
-//
-//            updateCheckServerStatus();
-//
-//            mCheckServerDateTime = System.currentTimeMillis();
-//            preferencesHelper.putCheckServerDateTime(mCheckServerDateTime);
-//        }
-//
-//        @Override
-//        protected void onPostExecute(Date date) {
-//            super.onPostExecute(date);
-//
-////            mCheckServerActive = false;
-//
-//            mDateServer = date;
-//
-//            updateDateServer(date);
-//
-//            updateCheckServerStatus();
-//
-//            preferencesHelper.putDateServer(date != null ? date.getTime() : 0);
-//        }
-//    }
 
     @Override
     public Loader<MapFiles> onCreateLoader(int id, Bundle args) {
