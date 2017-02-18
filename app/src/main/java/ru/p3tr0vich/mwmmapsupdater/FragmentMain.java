@@ -3,11 +3,7 @@ package ru.p3tr0vich.mwmmapsupdater;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SyncStatusObserver;
-import android.database.ContentObserver;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.LoaderManager;
@@ -28,7 +24,6 @@ import android.view.animation.LinearInterpolator;
 import android.view.animation.RotateAnimation;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -50,12 +45,17 @@ import java.util.concurrent.TimeUnit;
 
 import ru.p3tr0vich.mwmmapsupdater.adapters.MapItemRecyclerViewAdapter;
 import ru.p3tr0vich.mwmmapsupdater.broadcastreceivers.BroadcastReceiverMapFilesLoading;
+import ru.p3tr0vich.mwmmapsupdater.helpers.ConnectivityHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ContentResolverHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.SyncAccountHelper;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
 import ru.p3tr0vich.mwmmapsupdater.models.MapItem;
+import ru.p3tr0vich.mwmmapsupdater.observers.SyncProgressObserver;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsFiles;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
+
+import static ru.p3tr0vich.mwmmapsupdater.helpers.PreferencesHelper.BAD_DATETIME;
+import static ru.p3tr0vich.mwmmapsupdater.utils.Utils.toast;
 
 public class FragmentMain extends FragmentBase implements
         LoaderManager.LoaderCallbacks<MapFiles>,
@@ -68,7 +68,7 @@ public class FragmentMain extends FragmentBase implements
     private static final int MAP_FILES_LOADER_ID = 0;
 
     private static final long RECHECK_SERVER_MILLIS = BuildConfig.DEBUG ?
-            TimeUnit.SECONDS.toMillis(5) : TimeUnit.MINUTES.toMillis(10);
+            TimeUnit.SECONDS.toMillis(10) : TimeUnit.MINUTES.toMillis(10);
 
     private static final String KEY_DATE_SERVER = "KEY_DATE_SERVER";
     private static final String KEY_CHECK_SERVER_DATE_TIME = "KEY_CHECK_SERVER_DATE_TIME";
@@ -94,7 +94,7 @@ public class FragmentMain extends FragmentBase implements
 
     private BroadcastReceiverMapFilesLoading mBroadcastReceiverMapFilesLoading;
 
-    private ContentObserver mObserver;
+    private SyncProgressObserver mSyncProgressObserver;
 
     private SyncAccountHelper mSyncAccountHelper;
     private Object mSyncMonitor;
@@ -140,17 +140,6 @@ public class FragmentMain extends FragmentBase implements
 
         mImgCheckServer = (ImageView) view.findViewById(R.id.image_check_server);
 
-        view.findViewById(R.id.btn_check_server).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (mSyncAccountHelper.isSyncActive()) {
-                    Toast.makeText(getContext(), R.string.text_check_server_active, Toast.LENGTH_SHORT).show();
-                } else {
-                    ContentResolverHelper.requestSync(getContext());
-                }
-            }
-        });
-
         Context context = view.getContext();
 
         RecyclerView recyclerView = (RecyclerView) view.findViewById(R.id.list);
@@ -164,12 +153,8 @@ public class FragmentMain extends FragmentBase implements
 
         recyclerView.setAdapter(mMapItemRecyclerViewAdapter = new MapItemRecyclerViewAdapter(mListener));
 
-        view.findViewById(R.id.btn_retry_find_maps).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                getLoaderManager().restartLoader(MAP_FILES_LOADER_ID, null, FragmentMain.this);
-            }
-        });
+        view.findViewById(R.id.btn_check_server).setOnClickListener(mBtnCheckServerClickListener);
+        view.findViewById(R.id.btn_retry_find_maps).setOnClickListener(mBtnRetryFindMapsClickListener);
 
         mLayoutError.setVisibility(View.GONE);
         mLayoutMain.setVisibility(View.GONE);
@@ -187,7 +172,7 @@ public class FragmentMain extends FragmentBase implements
 
         if (savedInstanceState == null) {
             long dateServer = preferencesHelper.getDateServer();
-            mDateServer = dateServer == 0 ? null : new Date(dateServer);
+            mDateServer = dateServer == BAD_DATETIME ? null : new Date(dateServer);
             mCheckServerDateTime = preferencesHelper.getCheckServerDateTime();
         } else {
             mDateServer = (Date) savedInstanceState.getSerializable(KEY_DATE_SERVER);
@@ -235,8 +220,8 @@ public class FragmentMain extends FragmentBase implements
 
     @Override
     public void onDestroy() {
-//        mBroadcastReceiverSyncProgress.unregister(getContext());
-        getContext().getContentResolver().unregisterContentObserver(mObserver);
+        mSyncProgressObserver.unregister(getContext());
+
         mBroadcastReceiverMapFilesLoading.unregister(getContext());
 
         super.onDestroy();
@@ -264,41 +249,42 @@ public class FragmentMain extends FragmentBase implements
     }
 
     private void initSyncProgressObserver() {
-        mObserver = new ContentObserver(new Handler(Looper.getMainLooper())) {
+        mSyncProgressObserver = new SyncProgressObserver() {
+            @Override
+            public void onCheckServerDateTime(long dateTime) {
+                mCheckServerDateTime = dateTime;
+            }
 
             @Override
-            public void onChange(boolean selfChange, Uri uri) {
-                UtilsLog.d(true, "ContentObserver", "onChange", "uri == " + uri);
-
-                if (uri != null) {
-                    switch (AppContentProvider.uriMatch(uri)) {
-                        case AppContentProvider.SYNC_PROGRESS_DATE_CHECKED_ITEM:
-                            String lastPath = uri.getLastPathSegment();
-
-                            UtilsLog.d(true, "ContentObserver", "onChange", "lastPath == " + lastPath);
-
-                            Date date;
-                            if (TextUtils.isEmpty(lastPath)) {
-                                date = null;
-                            } else {
-                                date = new Date(Long.parseLong(lastPath));
-                            }
-
-                            mDateServer = date;
-                            updateDateServer(date);
-
-                            break;
-                    }
-                }
-            }
-
-            public void onChange(boolean selfChange) {
-                onChange(selfChange, null);
+            public void onDateChecked(@Nullable Date date) {
+                mDateServer = date;
+                updateDateServer(date);
             }
         };
-        getContext().getContentResolver().registerContentObserver(
-                AppContentProvider.URI_SYNC_PROGRESS_DATE_CHECKED, true, mObserver);
+        mSyncProgressObserver.register(getContext());
     }
+
+    private final View.OnClickListener mBtnCheckServerClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            if (mSyncAccountHelper.isSyncActive()) {
+                toast(getContext(), R.string.message_check_server_active);
+            } else {
+                if (ConnectivityHelper.getConnectedState(getContext()) != ConnectivityHelper.DISCONNECTED) {
+                    ContentResolverHelper.requestSync(getContext());
+                } else {
+                    toast(getContext(), R.string.message_error_no_internet);
+                }
+            }
+        }
+    };
+
+    private final View.OnClickListener mBtnRetryFindMapsClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            getLoaderManager().restartLoader(MAP_FILES_LOADER_ID, null, FragmentMain.this);
+        }
+    };
 
     private void updateTextDate(@NonNull TextView textView, @Nullable Date date) {
         textView.setText(date != null ? DATE_FORMAT.format(date) : getString(R.string.text_error_date_server_null));
@@ -549,6 +535,7 @@ public class FragmentMain extends FragmentBase implements
             json = new String(buffer, "UTF-8");
         } catch (IOException e) {
             e.printStackTrace();
+            UtilsLog.e(TAG, "getMapNamesAndDescriptions", "error == " + e.toString());
         }
 
         JSONObject jsonObject = null;
@@ -558,6 +545,7 @@ public class FragmentMain extends FragmentBase implements
                 jsonObject = new JSONObject(json);
             } catch (JSONException e) {
                 e.printStackTrace();
+                UtilsLog.e(TAG, "getMapNamesAndDescriptions", "error == " + e.toString());
             }
         }
 
@@ -580,6 +568,7 @@ public class FragmentMain extends FragmentBase implements
                     mapDateLocal = MAP_SUB_DIR_DATE_FORMAT.parse(data.getMapSubDir());
                 } catch (ParseException e) {
                     e.printStackTrace();
+                    UtilsLog.e(TAG, "onLoadFinished", "error == " + e.toString());
                 }
 
                 updateDateLocal(mapDateLocal);
@@ -604,7 +593,7 @@ public class FragmentMain extends FragmentBase implements
                                 name = namesAndDescriptions.getString(fileName);
                                 description = namesAndDescriptions.getString(fileName + " Description");
                             } catch (JSONException e) {
-//                                e.printStackTrace();
+                                UtilsLog.e(TAG, "onLoadFinished", "error == " + e.toString());
                             }
                         }
 

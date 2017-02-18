@@ -28,7 +28,12 @@ public class PreferencesHelper {
 
     private static final String TAG = "PreferencesHelper";
 
-    private static final boolean LOG_ENABLED = true;
+    private static final boolean LOG_ENABLED = false;
+
+    /**
+     * Ошибочное время.
+     */
+    public static final int BAD_DATETIME = 0;
 
     /**
      * Имя каталога с картами по умолчанию.
@@ -262,7 +267,7 @@ public class PreferencesHelper {
     }
 
     public long getDateServer() {
-        return mSharedPreferences.getLong(keys.dateServer, 0);
+        return mSharedPreferences.getLong(keys.dateServer, BAD_DATETIME);
     }
 
     public void putDateServer(long date) {
@@ -273,7 +278,7 @@ public class PreferencesHelper {
     }
 
     public long getCheckServerDateTime() {
-        return mSharedPreferences.getLong(keys.checkServerDateTime, 0);
+        return mSharedPreferences.getLong(keys.checkServerDateTime, BAD_DATETIME);
     }
 
     public void putCheckServerDateTime(long dateTime) {

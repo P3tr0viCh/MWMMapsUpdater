@@ -27,7 +27,7 @@ public class MapFilesServerHelper {
 
     private static final String TAG = "MapFilesServerHelper";
 
-    private static final boolean LOG_ENABLED = true;
+    private static final boolean LOG_ENABLED = false;
 
     private static final boolean DUMMY_FILE_INFO = false;
     private static final boolean FILE_INFO_WAIT_ENABLED = false;

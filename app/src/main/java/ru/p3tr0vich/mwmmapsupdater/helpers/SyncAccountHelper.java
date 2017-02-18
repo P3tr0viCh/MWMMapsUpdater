@@ -13,8 +13,6 @@ public class SyncAccountHelper {
 
     private static final String TAG = "SyncAccountHelper";
 
-    // TODO
-//    @SuppressLint("StaticFieldLeak")
     private static SyncAccountHelper instance;
 
     private final AccountManager mAccountManager;
@@ -33,6 +31,10 @@ public class SyncAccountHelper {
         mAccountType = context.getString(R.string.sync_account_type);
 
         mAccount = createAccount();
+
+        // TODO: отключить по умолчанию, включать в настройках
+        setIsSyncable(true);
+        setSyncAutomatically(true);
     }
 
     public static synchronized SyncAccountHelper getInstance(@NonNull Context context) {
@@ -48,9 +50,9 @@ public class SyncAccountHelper {
 
         Account accounts[] = mAccountManager.getAccountsByType(getAccountType());
 
-        if (accounts.length > 0)
+        if (accounts.length > 0) {
             account = accounts[0];
-        else {
+        } else {
             account = new Account(getAccountName(), getAccountType());
 
             if (mAccountManager.addAccountExplicitly(account, null, null)) {
@@ -81,5 +83,17 @@ public class SyncAccountHelper {
 
     public boolean isSyncActive() {
         return ContentResolver.isSyncActive(getAccount(), getAuthority());
+    }
+
+    private void setIsSyncable(Account account, boolean syncable) {
+        ContentResolver.setIsSyncable(account, getAuthority(), syncable ? 1 : 0);
+    }
+
+    public void setIsSyncable(boolean syncable) {
+        setIsSyncable(getAccount(), syncable);
+    }
+
+    public void setSyncAutomatically(boolean sync) {
+        ContentResolver.setSyncAutomatically(getAccount(), getAuthority(), sync);
     }
 }

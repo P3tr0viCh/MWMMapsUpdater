@@ -4,8 +4,8 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.Toast;
 
-import ru.p3tr0vich.mwmmapsupdater.models.MapItem;
 import ru.p3tr0vich.mwmmapsupdater.helpers.FragmentHelper;
+import ru.p3tr0vich.mwmmapsupdater.models.MapItem;
 
 public class ActivityMain extends AppCompatActivity implements
         FragmentMain.OnListFragmentInteractionListener,
@@ -27,7 +27,9 @@ public class ActivityMain extends AppCompatActivity implements
 
     @Override
     public void onListFragmentInteraction(MapItem item) {
-        Toast.makeText(this, item.toString(), Toast.LENGTH_SHORT).show();
+        if (BuildConfig.DEBUG) {
+            Toast.makeText(this, item.toString(), Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override

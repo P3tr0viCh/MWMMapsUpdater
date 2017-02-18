@@ -35,31 +35,43 @@ public class AppContentProvider extends ContentProvider {
         }
     }
 
-    private static class UriPath {
-        private static final String SYNC_PROGRESS = "sync_progress";
-        private static final String SYNC_PROGRESS_DATE_CHECKED = SYNC_PROGRESS + "/date_checked";
-        private static final String SYNC_PROGRESS_DATE_CHECKED_ITEM = SYNC_PROGRESS_DATE_CHECKED + "/*";
+    private interface UriPath {
+        String SYNC_PROGRESS = "sync_progress";
+        String SYNC_PROGRESS_CHECK_SERVER_DATETIME = SYNC_PROGRESS + "/check_server_datetime";
+        String SYNC_PROGRESS_CHECK_SERVER_DATETIME_ITEM = SYNC_PROGRESS_CHECK_SERVER_DATETIME + "/*";
+        String SYNC_PROGRESS_DATE_CHECKED = SYNC_PROGRESS + "/date_checked";
+        String SYNC_PROGRESS_DATE_CHECKED_ITEM = SYNC_PROGRESS_DATE_CHECKED + "/*";
 
-        private static final String PREFERENCES = "preferences";
-        private static final String PREFERENCES_ITEM = PREFERENCES + "/*";
+        String PREFERENCES = "preferences";
+        String PREFERENCES_ITEM = PREFERENCES + "/*";
     }
 
-    public static final Uri URI_SYNC_PROGRESS_DATE_CHECKED = BaseUri.getUri(UriPath.SYNC_PROGRESS_DATE_CHECKED);
+    public interface UriList {
+        Uri SYNC_PROGRESS = BaseUri.getUri(UriPath.SYNC_PROGRESS);
+        Uri SYNC_PROGRESS_CHECK_SERVER_DATETIME = BaseUri.getUri(UriPath.SYNC_PROGRESS_CHECK_SERVER_DATETIME);
+        Uri SYNC_PROGRESS_DATE_CHECKED = BaseUri.getUri(UriPath.SYNC_PROGRESS_DATE_CHECKED);
 
-    public static final Uri URI_PREFERENCES = BaseUri.getUri(UriPath.PREFERENCES);
+        Uri PREFERENCES = BaseUri.getUri(UriPath.PREFERENCES);
+    }
 
-    public static final int SYNC_PROGRESS_DATE_CHECKED_ITEM = 20;
+    public interface UriMatchResult {
+        int SYNC_PROGRESS_CHECK_SERVER_DATETIME_ITEM = 20;
+        int SYNC_PROGRESS_DATE_CHECKED_ITEM = 21;
 
-    private static final int PREFERENCES = 30;
-    private static final int PREFERENCES_ITEM = 31;
+        int PREFERENCES = 30;
+        int PREFERENCES_ITEM = 31;
+    }
 
     private static final UriMatcher sURIMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
     static {
-        sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.SYNC_PROGRESS_DATE_CHECKED_ITEM, SYNC_PROGRESS_DATE_CHECKED_ITEM);
+        sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.SYNC_PROGRESS_CHECK_SERVER_DATETIME_ITEM,
+                UriMatchResult.SYNC_PROGRESS_CHECK_SERVER_DATETIME_ITEM);
+        sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.SYNC_PROGRESS_DATE_CHECKED_ITEM,
+                UriMatchResult.SYNC_PROGRESS_DATE_CHECKED_ITEM);
 
-        sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.PREFERENCES, PREFERENCES);
-        sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.PREFERENCES_ITEM, PREFERENCES_ITEM);
+        sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.PREFERENCES, UriMatchResult.PREFERENCES);
+        sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.PREFERENCES_ITEM, UriMatchResult.PREFERENCES_ITEM);
     }
 
     private static final String CURSOR_DIR_BASE_TYPE = ContentResolver.CURSOR_DIR_BASE_TYPE +
@@ -95,9 +107,9 @@ public class AppContentProvider extends ContentProvider {
     @Override
     public String getType(@NonNull Uri uri) {
         switch (uriMatch(uri)) {
-            case PREFERENCES:
+            case UriMatchResult.PREFERENCES:
                 return CURSOR_DIR_BASE_TYPE_PREFERENCES;
-            case PREFERENCES_ITEM:
+            case UriMatchResult.PREFERENCES_ITEM:
                 return CURSOR_ITEM_BASE_TYPE_PREFERENCES;
             default:
                 UtilsLog.d(LOG_ENABLED, TAG, "getType", "sURIMatcher.match() == default, uri == " + uri);
@@ -110,9 +122,9 @@ public class AppContentProvider extends ContentProvider {
     public Cursor query(@NonNull Uri uri, @Nullable String[] projection, @Nullable String selection, @Nullable String[] selectionArgs, @Nullable String sortOrder) {
         try {
             switch (uriMatch(uri)) {
-                case PREFERENCES:
+                case UriMatchResult.PREFERENCES:
                     return mPreferencesHelper.getPreferences();
-                case PREFERENCES_ITEM:
+                case UriMatchResult.PREFERENCES_ITEM:
                     return mPreferencesHelper.getPreference(uri.getLastPathSegment());
                 default:
                     UtilsLog.d(LOG_ENABLED, TAG, "query", "sURIMatcher.match() == default, uri == " + uri);
@@ -140,9 +152,9 @@ public class AppContentProvider extends ContentProvider {
     public int update(@NonNull Uri uri, @Nullable ContentValues values, @Nullable String selection, @Nullable String[] selectionArgs) {
         try {
             switch (uriMatch(uri)) {
-                case PREFERENCES:
+                case UriMatchResult.PREFERENCES:
                     return mPreferencesHelper.setPreferences(values, null);
-                case PREFERENCES_ITEM:
+                case UriMatchResult.PREFERENCES_ITEM:
                     return mPreferencesHelper.setPreferences(values, uri.getLastPathSegment());
                 default:
                     UtilsLog.d(LOG_ENABLED, TAG, "update", "sURIMatcher.match() == default, uri == " + uri);

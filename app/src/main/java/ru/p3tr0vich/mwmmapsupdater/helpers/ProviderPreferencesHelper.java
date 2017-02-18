@@ -30,8 +30,8 @@ public class ProviderPreferencesHelper {
     private ContentValues query(@Nullable String preference) throws RemoteException, FormatException {
         final Cursor cursor = mProvider.query(
                 TextUtils.isEmpty(preference) ?
-                        AppContentProvider.URI_PREFERENCES :
-                        Uri.withAppendedPath(AppContentProvider.URI_PREFERENCES, preference),
+                        AppContentProvider.UriList.PREFERENCES :
+                        Uri.withAppendedPath(AppContentProvider.UriList.PREFERENCES, preference),
                 null, null, null, null);
 
         if (cursor == null) {
@@ -69,8 +69,8 @@ public class ProviderPreferencesHelper {
     private void update(@NonNull ContentValues contentValues,
                         @Nullable String preference) throws RemoteException {
         mProvider.update(TextUtils.isEmpty(preference) ?
-                        AppContentProvider.URI_PREFERENCES :
-                        Uri.withAppendedPath(AppContentProvider.URI_PREFERENCES, preference),
+                        AppContentProvider.UriList.PREFERENCES :
+                        Uri.withAppendedPath(AppContentProvider.UriList.PREFERENCES, preference),
                 contentValues, null, null);
     }
 

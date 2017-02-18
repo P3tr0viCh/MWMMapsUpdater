@@ -6,7 +6,6 @@ import android.content.ContentProviderClient;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SyncResult;
-import android.net.Uri;
 import android.nfc.FormatException;
 import android.os.Bundle;
 import android.os.RemoteException;
@@ -18,13 +17,15 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import ru.p3tr0vich.mwmmapsupdater.AppContentProvider;
 import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
 import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesLocalHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesServerHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ProviderPreferencesHelper;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
+import ru.p3tr0vich.mwmmapsupdater.observers.SyncProgressObserver;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
+
+import static ru.p3tr0vich.mwmmapsupdater.helpers.PreferencesHelper.BAD_DATETIME;
 
 public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
@@ -57,19 +58,16 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                     }
                 }
 
-                providerPreferencesHelper.putCheckServerDateTime(System.currentTimeMillis());
-
                 String mapDirName = providerPreferencesHelper.getMapsDir();
 
                 Date date = getMapsVersion(mapDirName);
 
-                Uri uri = Uri.withAppendedPath(AppContentProvider.URI_SYNC_PROGRESS_DATE_CHECKED,
-                        date != null ? String.valueOf(date.getTime()) : "");
+                long currentTimeMillis = System.currentTimeMillis();
+                providerPreferencesHelper.putCheckServerDateTime(currentTimeMillis);
+                SyncProgressObserver.notifyCheckServerDateTime(getContext(), currentTimeMillis);
 
-                getContext().getContentResolver().notifyChange(uri, null, false);
-
-                providerPreferencesHelper.putDateServer(date != null ? date.getTime() : 0);
-
+                providerPreferencesHelper.putDateServer(date != null ? date.getTime() : BAD_DATETIME);
+                SyncProgressObserver.notifyDateChecked(getContext(), date);
             } catch (Exception e) {
                 handleException(e, syncResult);
             }
@@ -89,7 +87,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         else if (e instanceof FormatException) syncResult.stats.numParseExceptions++;
         else syncResult.databaseError = true;
 
-        UtilsLog.e(TAG, "handleException", "error  == " + e.toString());
+        UtilsLog.e(TAG, "handleException", "error == " + e.toString());
     }
 
     @Nullable
