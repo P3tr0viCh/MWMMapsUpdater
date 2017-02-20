@@ -36,7 +36,7 @@ public class MapFilesLoader extends AsyncTaskLoader<MapFiles> {
         BroadcastReceiverMapFilesLoading.send(getContext(), true);
 
         try {
-            return MapFilesLocalHelper.find(mMapDir);
+            return MapFilesLocalHelper.find(getContext(), mMapDir);
         } finally {
             BroadcastReceiverMapFilesLoading.send(getContext(), false);
         }

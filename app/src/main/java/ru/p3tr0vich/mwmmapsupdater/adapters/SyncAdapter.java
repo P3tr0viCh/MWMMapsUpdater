@@ -58,9 +58,9 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                     }
                 }
 
-                String mapDirName = providerPreferencesHelper.getMapsDir();
+                String parentMapsDir = providerPreferencesHelper.getParentMapsDir();
 
-                Date date = getMapsVersion(mapDirName);
+                Date date = getMapsVersion(parentMapsDir);
 
                 long currentTimeMillis = System.currentTimeMillis();
                 providerPreferencesHelper.putCheckServerDateTime(currentTimeMillis);
@@ -91,19 +91,17 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
     }
 
     @Nullable
-    private Date getMapsVersion(@NonNull String mapDirName) {
-        MapFiles mapFiles = MapFilesLocalHelper.find(mapDirName);
+    private Date getMapsVersion(@NonNull String parentMapsDir) throws IOException {
+        MapFiles mapFiles = MapFilesLocalHelper.find(getContext(), parentMapsDir);
 
         if (mapFiles.getResult() == MapFiles.RESULT_OK) {
-            List<String> fileList = mapFiles.getFileList();
+            List<String> mapNames = mapFiles.getMapNameList();
 
-            if (fileList != null) {
-                Date date = MapFilesServerHelper.getVersion(fileList);
+            Date date = MapFilesServerHelper.getVersion(mapNames);
 
-                UtilsLog.d(LOG_ENABLED, TAG, "getMapsVersion", "date == " + date);
+            UtilsLog.d(LOG_ENABLED, TAG, "getMapsVersion", "date == " + date);
 
-                return date;
-            }
+            return date;
         }
 
         UtilsLog.e(TAG, "getMapsVersion", "date  == null");

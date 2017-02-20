@@ -74,8 +74,8 @@ public class ProviderPreferencesHelper {
                 contentValues, null, null);
     }
 
-    public String getMapsDir() throws RemoteException, FormatException {
-        return query(mPreferencesHelper.keys.mapsDir).getAsString(mPreferencesHelper.keys.mapsDir);
+    public String getParentMapsDir() throws RemoteException, FormatException {
+        return query(mPreferencesHelper.keys.parentMapsDir).getAsString(mPreferencesHelper.keys.parentMapsDir);
     }
 
     public void putCheckServerDateTime(long dateTime) throws RemoteException {

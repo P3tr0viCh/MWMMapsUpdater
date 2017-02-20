@@ -1,34 +1,34 @@
 package ru.p3tr0vich.mwmmapsupdater.models;
 
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+
 public class MapItem {
 
-    private String mId;
+    private final String mId;
 
-    private String mName;
-    private String mDescription;
+    private final String mName;
+    private final String mDescription;
 
-    public MapItem(String id) {
+    public MapItem(@NonNull String id, @Nullable String name, @Nullable String description) {
         mId = id;
+        mName = name;
+        mDescription = description;
     }
 
+    @NonNull
     public String getId() {
         return mId;
     }
 
+    @Nullable
     public String getName() {
         return mName;
     }
 
-    public void setName(String name) {
-        mName = name;
-    }
-
+    @Nullable
     public String getDescription() {
         return mDescription;
-    }
-
-    public void setDescription(String description) {
-        mDescription = description;
     }
 
     @Override

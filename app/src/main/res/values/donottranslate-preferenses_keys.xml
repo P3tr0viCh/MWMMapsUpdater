@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="pref_key_maps_dir" translatable="false">maps_dir</string>
+    <string name="pref_key_parent_maps_dir" translatable="false">parent_maps_dir</string>
+
+    <string name="pref_key_used_map_dir" translatable="false">used_map_dir</string>
+    <string name="pref_key_used_map_files" translatable="false">used_map_files</string>
+
+    <string name="pref_key_date_local" translatable="false">date_local</string>
 
     <string name="pref_key_date_server" translatable="false">date_server</string>
     <string name="pref_key_check_server_date_time" translatable="false">check_server_date_time</string>

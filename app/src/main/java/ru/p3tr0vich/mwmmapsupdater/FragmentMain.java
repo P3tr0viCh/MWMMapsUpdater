@@ -32,7 +32,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,7 +46,6 @@ import ru.p3tr0vich.mwmmapsupdater.adapters.MapItemRecyclerViewAdapter;
 import ru.p3tr0vich.mwmmapsupdater.broadcastreceivers.BroadcastReceiverMapFilesLoading;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ConnectivityHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ContentResolverHelper;
-import ru.p3tr0vich.mwmmapsupdater.helpers.SyncAccountHelper;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
 import ru.p3tr0vich.mwmmapsupdater.models.MapItem;
 import ru.p3tr0vich.mwmmapsupdater.observers.SyncProgressObserver;
@@ -70,11 +68,11 @@ public class FragmentMain extends FragmentBase implements
     private static final long RECHECK_SERVER_MILLIS = BuildConfig.DEBUG ?
             TimeUnit.SECONDS.toMillis(10) : TimeUnit.MINUTES.toMillis(10);
 
+    private static final String KEY_DATE_LOCAL = "KEY_DATE_LOCAL";
     private static final String KEY_DATE_SERVER = "KEY_DATE_SERVER";
     private static final String KEY_CHECK_SERVER_DATE_TIME = "KEY_CHECK_SERVER_DATE_TIME";
 
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy.MM.dd", Locale.getDefault());
-    private static final DateFormat MAP_SUB_DIR_DATE_FORMAT = new SimpleDateFormat("yyMMdd", Locale.getDefault());
 
     private ViewGroup mLayoutError;
     private ViewGroup mLayoutMain;
@@ -85,6 +83,7 @@ public class FragmentMain extends FragmentBase implements
     private ImageView mImgCheckServer;
     private Animation mAnimationCheckServer;
 
+    private Date mDateLocal;
     private Date mDateServer;
     private long mCheckServerDateTime;
 
@@ -96,7 +95,7 @@ public class FragmentMain extends FragmentBase implements
 
     private SyncProgressObserver mSyncProgressObserver;
 
-    private SyncAccountHelper mSyncAccountHelper;
+    private AppAccount mAppAccount;
     private Object mSyncMonitor;
 
     @Override
@@ -115,7 +114,7 @@ public class FragmentMain extends FragmentBase implements
 
         UtilsLog.d(LOG_ENABLED, TAG, "onCreate", "savedInstanceState " + (savedInstanceState == null ? "=" : "!") + "= null");
 
-        mSyncAccountHelper = SyncAccountHelper.getInstance(getContext());
+        mAppAccount = new AppAccount(getContext());
 
         initAnimationCheckServer();
 
@@ -171,10 +170,15 @@ public class FragmentMain extends FragmentBase implements
         getLoaderManager().initLoader(MAP_FILES_LOADER_ID, null, this);
 
         if (savedInstanceState == null) {
+            long dateLocal = preferencesHelper.getDateLocal();
             long dateServer = preferencesHelper.getDateServer();
+
+            mDateLocal = dateLocal == BAD_DATETIME ? null : new Date(dateLocal);
             mDateServer = dateServer == BAD_DATETIME ? null : new Date(dateServer);
+
             mCheckServerDateTime = preferencesHelper.getCheckServerDateTime();
         } else {
+            mDateLocal = (Date) savedInstanceState.getSerializable(KEY_DATE_LOCAL);
             mDateServer = (Date) savedInstanceState.getSerializable(KEY_DATE_SERVER);
             mCheckServerDateTime = savedInstanceState.getLong(KEY_CHECK_SERVER_DATE_TIME);
         }
@@ -189,7 +193,7 @@ public class FragmentMain extends FragmentBase implements
         mSyncMonitor = ContentResolver.addStatusChangeListener(ContentResolver.SYNC_OBSERVER_TYPE_ACTIVE, this);
 
         if (((System.currentTimeMillis() - mCheckServerDateTime) > RECHECK_SERVER_MILLIS) || mDateServer == null) {
-            ContentResolverHelper.requestSync(getContext());
+            ContentResolverHelper.requestSync(mAppAccount);
         } else {
             updateDateServer(mDateServer);
         }
@@ -208,6 +212,7 @@ public class FragmentMain extends FragmentBase implements
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
+        outState.putSerializable(KEY_DATE_LOCAL, mDateLocal);
         outState.putSerializable(KEY_DATE_SERVER, mDateServer);
         outState.putLong(KEY_CHECK_SERVER_DATE_TIME, mCheckServerDateTime);
     }
@@ -267,11 +272,11 @@ public class FragmentMain extends FragmentBase implements
     private final View.OnClickListener mBtnCheckServerClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            if (mSyncAccountHelper.isSyncActive()) {
+            if (ContentResolverHelper.isSyncActive(mAppAccount)) {
                 toast(getContext(), R.string.message_check_server_active);
             } else {
                 if (ConnectivityHelper.getConnectedState(getContext()) != ConnectivityHelper.DISCONNECTED) {
-                    ContentResolverHelper.requestSync(getContext());
+                    ContentResolverHelper.requestSync(mAppAccount);
                 } else {
                     toast(getContext(), R.string.message_error_no_internet);
                 }
@@ -315,7 +320,7 @@ public class FragmentMain extends FragmentBase implements
     public boolean onOptionsItemSelected(MenuItem item) {
         boolean result = false;
 
-        File mapDir = new File(preferencesHelper.getMapsDir());
+        File mapDir = new File(preferencesHelper.getParentMapsDir());
 
         File[] listFiles;
 
@@ -485,6 +490,11 @@ public class FragmentMain extends FragmentBase implements
                         File file1 = new File(mapSubDir, "Abkhazia.mwm");
                         File file2 = new File(mapSubDir, "Russia_Orenburg Oblast.mwm");
                         File file3 = new File(mapSubDir, "Russia_Omsk Oblast.mwm");
+
+                        if (file1.delete() && file2.delete() && file3.delete()) {
+                            UtilsLog.d(LOG_ENABLED, TAG, "existing files deleted in ", mapSubDir.getAbsolutePath());
+                        }
+
                         try {
                             result = file1.createNewFile() &&
                                     file2.createNewFile() &&
@@ -507,7 +517,7 @@ public class FragmentMain extends FragmentBase implements
     public Loader<MapFiles> onCreateLoader(int id, Bundle args) {
         UtilsLog.d(LOG_ENABLED, TAG, "onCreateLoader");
 
-        return new MapFilesLoader(getContext(), preferencesHelper.getMapsDir());
+        return new MapFilesLoader(getContext(), preferencesHelper.getParentMapsDir());
     }
 
     @Nullable
@@ -562,56 +572,44 @@ public class FragmentMain extends FragmentBase implements
             mapDir = data.getMapDir();
 
             if (data.getResult() == MapFiles.RESULT_OK) {
-                Date mapDateLocal = null;
-                try {
-                    // mapSubDir == '171232' ==> '180101';
-                    mapDateLocal = MAP_SUB_DIR_DATE_FORMAT.parse(data.getMapSubDir());
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                    UtilsLog.e(TAG, "onLoadFinished", "error == " + e.toString());
-                }
-
-                updateDateLocal(mapDateLocal);
+                mDateLocal = data.getDate();
+                updateDateLocal(mDateLocal);
 
                 List<MapItem> mapItems = new ArrayList<>();
 
-                List<String> fileList = data.getFileList();
+                List<String> mapNames = data.getMapNameList();
 
-                MapItem mapItem;
+                JSONObject namesAndDescriptions = getMapNamesAndDescriptions();
 
-                if (fileList != null) {
-                    JSONObject namesAndDescriptions = getMapNamesAndDescriptions();
+                for (String mapName : mapNames) {
+                    String name = mapName;
+                    String description = null;
 
-                    for (String fileName : fileList) {
-                        mapItem = new MapItem(fileName);
-
-                        String name = fileName;
-                        String description = null;
-
-                        if (namesAndDescriptions != null) {
-                            try {
-                                name = namesAndDescriptions.getString(fileName);
-                                description = namesAndDescriptions.getString(fileName + " Description");
-                            } catch (JSONException e) {
-                                UtilsLog.e(TAG, "onLoadFinished", "error == " + e.toString());
-                            }
+                    if (namesAndDescriptions != null) {
+                        try {
+                            name = namesAndDescriptions.getString(mapName);
+                            description = namesAndDescriptions.getString(mapName + " Description");
+                        } catch (JSONException e) {
+                            UtilsLog.e(TAG, "onLoadFinished", "JSONException error == " + e.toString());
                         }
-
-                        mapItem.setName(name);
-                        mapItem.setDescription(description);
-
-                        mapItems.add(mapItem);
                     }
 
-                    mMapItemRecyclerViewAdapter.swapItems(mapItems);
-
-                    mLayoutError.setVisibility(View.GONE);
-                    mLayoutMain.setVisibility(View.VISIBLE);
-
-                    return;
+                    mapItems.add(new MapItem(mapName, name, description));
                 }
+
+                mMapItemRecyclerViewAdapter.swapItems(mapItems);
+
+                mLayoutError.setVisibility(View.GONE);
+                mLayoutMain.setVisibility(View.VISIBLE);
+
+                return;
             }
         }
+
+        preferencesHelper.putUsedMapDir(null);
+        preferencesHelper.putUsedMapFiles(null);
+        preferencesHelper.putDateLocal(BAD_DATETIME);
+        preferencesHelper.putDateServer(BAD_DATETIME);
 
         mMapItemRecyclerViewAdapter.notifyItemRangeRemoved(0, mMapItemRecyclerViewAdapter.getItemCount());
 
@@ -632,9 +630,7 @@ public class FragmentMain extends FragmentBase implements
     }
 
     private void updateCheckServerStatus() {
-        final boolean updateActive = mSyncAccountHelper.isSyncActive();
-
-        if (updateActive) {
+        if (ContentResolverHelper.isSyncActive(mAppAccount)) {
             mImgCheckServer.startAnimation(mAnimationCheckServer);
         } else {
             mImgCheckServer.clearAnimation();

@@ -17,6 +17,7 @@ import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Map;
+import java.util.Set;
 
 import ru.p3tr0vich.mwmmapsupdater.R;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
@@ -38,7 +39,7 @@ public class PreferencesHelper {
     /**
      * Имя каталога с картами по умолчанию.
      */
-    public static final String DEFAULT_MWM_MAPS_DIR = "MapsWithMe";
+    public static final String DEFAULT_PARENT_MAPS_DIR_NAME = "MapsWithMe";
 
     @SuppressWarnings("FieldCanBeLocal")
     private final Context mContext; // == ApplicationContext
@@ -55,14 +56,24 @@ public class PreferencesHelper {
 
     public static class Keys {
         @Retention(RetentionPolicy.SOURCE)
-        @IntDef({UNKNOWN, MAPS_DIR, DATE_SERVER, CHECK_SERVER_DATE_TIME})
+        @IntDef({UNKNOWN, PARENT_MAPS_DIR, USED_MAP_DIR, USED_MAP_FILES,
+                DATE_LOCAL, DATE_SERVER, CHECK_SERVER_DATE_TIME})
         public @interface KeyAsInt {
         }
 
         public static final int UNKNOWN = -1;
 
-        public final String mapsDir;
-        public static final int MAPS_DIR = R.string.pref_key_maps_dir;
+        public final String parentMapsDir;
+        public static final int PARENT_MAPS_DIR = R.string.pref_key_parent_maps_dir;
+
+        public final String usedMapDir;
+        public static final int USED_MAP_DIR = R.string.pref_key_used_map_dir;
+
+        public final String usedMapFiles;
+        public static final int USED_MAP_FILES = R.string.pref_key_used_map_files;
+
+        public final String dateLocal;
+        public static final int DATE_LOCAL = R.string.pref_key_date_local;
 
         public final String dateServer;
         public static final int DATE_SERVER = R.string.pref_key_date_server;
@@ -70,7 +81,12 @@ public class PreferencesHelper {
         public static final int CHECK_SERVER_DATE_TIME = R.string.pref_key_check_server_date_time;
 
         private Keys(@NonNull Context context) {
-            mapsDir = context.getString(MAPS_DIR);
+            parentMapsDir = context.getString(PARENT_MAPS_DIR);
+
+            usedMapDir = context.getString(USED_MAP_DIR);
+            usedMapFiles = context.getString(USED_MAP_FILES);
+
+            dateLocal = context.getString(DATE_LOCAL);
 
             dateServer = context.getString(DATE_SERVER);
             checkServerDateTime = context.getString(CHECK_SERVER_DATE_TIME);
@@ -78,7 +94,10 @@ public class PreferencesHelper {
 
         @KeyAsInt
         public int getAsInt(@Nullable String key) {
-            if (mapsDir.equals(key)) return MAPS_DIR;
+            if (parentMapsDir.equals(key)) return PARENT_MAPS_DIR;
+            if (usedMapDir.equals(key)) return USED_MAP_DIR;
+            if (usedMapFiles.equals(key)) return USED_MAP_FILES;
+            if (dateLocal.equals(key)) return DATE_LOCAL;
             if (dateServer.equals(key)) return DATE_SERVER;
             if (checkServerDateTime.equals(key)) return CHECK_SERVER_DATE_TIME;
             else return UNKNOWN;
@@ -103,14 +122,18 @@ public class PreferencesHelper {
         return instance;
     }
 
-    @SuppressLint("SwitchIntDef")
     @PreferenceType
     public int getPreferenceType(@NonNull String key) {
         switch (keys.getAsInt(key)) {
             case Keys.CHECK_SERVER_DATE_TIME:
+            case Keys.DATE_LOCAL:
             case Keys.DATE_SERVER:
                 return PREFERENCE_TYPE_LONG;
             default:
+            case Keys.UNKNOWN:
+                UtilsLog.e(TAG, "getPreferenceType", "unhandled preference == " + key);
+            case Keys.PARENT_MAPS_DIR:
+            case Keys.USED_MAP_DIR:
                 return PREFERENCE_TYPE_STRING;
         }
     }
@@ -142,14 +165,20 @@ public class PreferencesHelper {
             }
         } else {
             switch (keys.getAsInt(preference)) {
-                case Keys.MAPS_DIR:
-                    result.put(preference, getMapsDir());
+                case Keys.PARENT_MAPS_DIR:
+                    result.put(preference, getParentMapsDir());
                     break;
-                case Keys.CHECK_SERVER_DATE_TIME:
-                    result.put(preference, getCheckServerDateTime());
+                case Keys.USED_MAP_DIR:
+                    result.put(preference, getUsedMapDir());
+                    break;
+                case Keys.DATE_LOCAL:
+                    result.put(preference, getDateLocal());
                     break;
                 case Keys.DATE_SERVER:
                     result.put(preference, getDateServer());
+                    break;
+                case Keys.CHECK_SERVER_DATE_TIME:
+                    result.put(preference, getCheckServerDateTime());
                     break;
                 case Keys.UNKNOWN:
                 default:
@@ -220,14 +249,20 @@ public class PreferencesHelper {
             return preferences.size();
         } else {
             switch (keys.getAsInt(preference)) {
-                case Keys.MAPS_DIR:
-                    putMapsDir(preferences.getAsString(preference));
+                case Keys.PARENT_MAPS_DIR:
+                    putParentMapsDir(preferences.getAsString(preference));
                     break;
-                case Keys.CHECK_SERVER_DATE_TIME:
-                    putCheckServerDateTime(preferences.getAsLong(preference));
+                case Keys.USED_MAP_DIR:
+                    putUsedMapDir(preferences.getAsString(preference));
+                    break;
+                case Keys.DATE_LOCAL:
+                    putDateLocal(preferences.getAsLong(preference));
                     break;
                 case Keys.DATE_SERVER:
                     putDateServer(preferences.getAsLong(preference));
+                    break;
+                case Keys.CHECK_SERVER_DATE_TIME:
+                    putCheckServerDateTime(preferences.getAsLong(preference));
                     break;
                 case Keys.UNKNOWN:
                 default:
@@ -245,24 +280,59 @@ public class PreferencesHelper {
     }
 
     @NonNull
-    public String getString(String key) {
+    private String getString(String key) {
         return getString(key, "");
     }
 
     @NonNull
-    public String getMapsDir() {
-        String dirName = getString(keys.mapsDir);
+    public String getParentMapsDir() {
+        String dirName = getString(keys.parentMapsDir);
         if (dirName.isEmpty()) {
-            File Dir = new File(Environment.getExternalStorageDirectory(), DEFAULT_MWM_MAPS_DIR);
+            File Dir = new File(Environment.getExternalStorageDirectory(), DEFAULT_PARENT_MAPS_DIR_NAME);
             dirName = Dir.getAbsolutePath();
         }
         return dirName;
     }
 
-    public void putMapsDir(String dirName) {
+    public void putParentMapsDir(String dirName) {
         mSharedPreferences
                 .edit()
-                .putString(keys.mapsDir, dirName)
+                .putString(keys.parentMapsDir, dirName)
+                .apply();
+    }
+
+    @NonNull
+    public String getUsedMapDir() {
+        return getString(keys.usedMapDir);
+    }
+
+    public void putUsedMapDir(@Nullable String usedMapDir) {
+        mSharedPreferences
+                .edit()
+                .putString(keys.usedMapDir, usedMapDir)
+                .apply();
+    }
+
+    @Nullable
+    public Set<String> getUsedMapFiles() {
+        return mSharedPreferences.getStringSet(keys.usedMapFiles, null);
+    }
+
+    public void putUsedMapFiles(@Nullable Set<String> usedMapFiles) {
+        mSharedPreferences
+                .edit()
+                .putStringSet(keys.usedMapFiles, usedMapFiles)
+                .apply();
+    }
+
+    public long getDateLocal() {
+        return mSharedPreferences.getLong(keys.dateLocal, BAD_DATETIME);
+    }
+
+    public void putDateLocal(long date) {
+        mSharedPreferences
+                .edit()
+                .putLong(keys.dateLocal, date)
                 .apply();
     }
 

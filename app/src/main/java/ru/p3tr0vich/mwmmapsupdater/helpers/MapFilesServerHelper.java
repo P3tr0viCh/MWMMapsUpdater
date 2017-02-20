@@ -12,15 +12,14 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Random;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
+import ru.p3tr0vich.mwmmapsupdater.models.FileInfo;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
 public class MapFilesServerHelper {
@@ -29,32 +28,14 @@ public class MapFilesServerHelper {
 
     private static final boolean LOG_ENABLED = false;
 
-    private static final boolean DUMMY_FILE_INFO = false;
+    private static final boolean DUMMY_FILE_INFO = true;
     private static final boolean FILE_INFO_WAIT_ENABLED = false;
 
     private static final String PROTOCOL = "http";
     private static final String HOST = "direct.mapswithme.com";
     private static final String PATH = "regular/daily";
 
-    private static class FileInfo {
-        private final Date mDate;
-
-        public FileInfo(@NonNull Date date) {
-            mDate = date;
-        }
-
-        @NonNull
-        public Date getDate() {
-            return mDate;
-        }
-
-        @Override
-        public String toString() {
-            return "FileInfo{" +
-                    "mDate=" + mDate +
-                    '}';
-        }
-    }
+    private static final int DEFAULT_CONNECT_TIMEOUT = (int) TimeUnit.SECONDS.toMillis(10);
 
     @Nullable
     private static URL getUrl(@NonNull String mapName) {
@@ -68,7 +49,7 @@ public class MapFilesServerHelper {
     }
 
     @Nullable
-    private static FileInfo getFileInfo(@NonNull String mapName) {
+    private static FileInfo getFileInfo(@NonNull String mapName) throws IOException {
 
         if (BuildConfig.DEBUG && FILE_INFO_WAIT_ENABLED) {
             try {
@@ -92,29 +73,16 @@ public class MapFilesServerHelper {
                 return null;
             }
 
-            HttpURLConnection connection;
-            try {
-                connection = (HttpURLConnection) url.openConnection();
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
-                connection.setRequestMethod("HEAD");
-            } catch (IOException e) {
-                e.printStackTrace();
-                UtilsLog.e(TAG, "getFileInfo", "openConnection IOException == " + e.toString());
-                return null;
-            }
+            connection.setRequestMethod("HEAD");
+            connection.setConnectTimeout(DEFAULT_CONNECT_TIMEOUT);
 
-            try {
-                connection.connect();
+            connection.connect();
 
-                lastModified = connection.getLastModified();
+            lastModified = connection.getLastModified();
 
-                connection.disconnect();
-            } catch (IOException e) {
-                e.printStackTrace();
-                UtilsLog.e(TAG, "getFileInfo", "connect IOException == " + e.toString());
-                return null;
-            }
-
+            connection.disconnect();
         }
 
         if (lastModified == 0) {
@@ -122,28 +90,28 @@ public class MapFilesServerHelper {
             return null;
         }
 
-        return new FileInfo(new Date(lastModified));
+        return new FileInfo(mapName, new Date(lastModified));
     }
 
     @NonNull
-    private static Map<String, FileInfo> getMapsInfo(@NonNull List<String> mapNames) {
-        Map<String, FileInfo> fileInfoMap = new HashMap<>();
+    private static List<FileInfo> getFileInfoList(@NonNull List<String> mapNames) throws IOException {
+        List<FileInfo> fileInfoList = new ArrayList<>();
 
-        UtilsLog.d(LOG_ENABLED, TAG, "getMapsInfo", "start");
+        UtilsLog.d(LOG_ENABLED, TAG, "getFileInfoList", "start");
 
         for (String mapName : mapNames) {
             FileInfo fileInfo = getFileInfo(mapName);
 
-            UtilsLog.d(LOG_ENABLED, TAG, "getMapsInfo", "fileInfo == " + fileInfo);
+            UtilsLog.d(LOG_ENABLED, TAG, "getFileInfoList", "fileInfo == " + fileInfo);
 
             if (fileInfo != null) {
-                fileInfoMap.put(mapName, fileInfo);
+                fileInfoList.add(fileInfo);
             }
         }
 
-        UtilsLog.d(LOG_ENABLED, TAG, "getMapsInfo", "end");
+        UtilsLog.d(LOG_ENABLED, TAG, "getFileInfoList", "end");
 
-        return fileInfoMap;
+        return fileInfoList;
     }
 
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("dd-MMM-yyyy HH:mm", Locale.US);
@@ -153,7 +121,7 @@ public class MapFilesServerHelper {
     }
 
     @Nullable
-    public static Date getVersion(@NonNull List<String> mapNames) {
+    public static Date getVersion(@NonNull List<String> mapNames) throws IOException {
         if (BuildConfig.DEBUG && DUMMY_FILE_INFO) {
             Random rand = new Random();
 
@@ -162,12 +130,12 @@ public class MapFilesServerHelper {
             }
         }
 
-        Map<String, FileInfo> fileInfoMap = getMapsInfo(mapNames);
+        List<FileInfo> fileInfoList = getFileInfoList(mapNames);
 
         List<Date> dates = new ArrayList<>();
 
-        for (Map.Entry<String, FileInfo> entry : fileInfoMap.entrySet()) {
-            dates.add(entry.getValue().getDate());
+        for (FileInfo fileInfo : fileInfoList) {
+            dates.add(fileInfo.getDate());
         }
 
         if (dates.isEmpty()) {

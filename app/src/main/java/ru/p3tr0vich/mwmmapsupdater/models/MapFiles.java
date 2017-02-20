@@ -2,10 +2,11 @@ package ru.p3tr0vich.mwmmapsupdater.models;
 
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 public class MapFiles {
@@ -21,18 +22,21 @@ public class MapFiles {
     public static final int RESULT_FILES_NOT_EXISTS = 3;
 
     @Result
-    private int mResult;
+    private final int mResult;
 
-    private String mMapDir;
-    private String mMapSubDir;
+    private final String mMapDir;
+    private final String mMapSubDir;
 
-    private List<String> mFileList;
+    private final List<FileInfo> mFileList;
 
-    public MapFiles(@Result int result, @NonNull String mapDir, @Nullable String mapSubDir, @Nullable List<String> fileList) {
+    private final Date mDate;
+
+    public MapFiles(@Result int result, @NonNull String mapDir, @NonNull String mapSubDir, @NonNull List<FileInfo> fileList, @NonNull Date date) {
         mResult = result;
         mMapDir = mapDir;
         mMapSubDir = mapSubDir;
         mFileList = fileList;
+        mDate = date;
     }
 
     @Result
@@ -40,19 +44,34 @@ public class MapFiles {
         return mResult;
     }
 
-    @Nullable
+    @NonNull
     public String getMapDir() {
         return mMapDir;
     }
 
-    @Nullable
+    @NonNull
     public String getMapSubDir() {
         return mMapSubDir;
     }
 
-    @Nullable
-    public List<String> getFileList() {
+    @NonNull
+    public List<FileInfo> getFileList() {
         return mFileList;
+    }
+
+    public Date getDate() {
+        return mDate;
+    }
+
+    @NonNull
+    public List<String> getMapNameList() {
+        List<String> mapNames = new ArrayList<>();
+
+        for (FileInfo fileInfo : mFileList) {
+            mapNames.add(fileInfo.getMapName());
+        }
+
+        return mapNames;
     }
 
     @Override
@@ -62,6 +81,7 @@ public class MapFiles {
                 ", mMapDir='" + mMapDir + '\'' +
                 ", mMapSubDir='" + mMapSubDir + '\'' +
                 ", mFileList=" + mFileList +
+                ", mDate=" + mDate +
                 '}';
     }
 }
