@@ -132,7 +132,7 @@ public class AppContentProvider extends ContentProvider {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            UtilsLog.e(TAG, "query", "exception == " + e.toString());
+            UtilsLog.e(TAG, "query", e);
             return null;
         }
     }
@@ -162,7 +162,7 @@ public class AppContentProvider extends ContentProvider {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            UtilsLog.e(TAG, "update", "exception == " + e.toString());
+            UtilsLog.e(TAG, "update", e);
             return -1;
         }
     }

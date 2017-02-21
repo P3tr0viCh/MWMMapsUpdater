@@ -28,10 +28,6 @@ public class UtilsLog {
         }
     }
 
-    public static void e(@Nullable String tag, @NonNull String msg, @Nullable String extMsg) {
-        Log.e(LOG_TAG, formatMsg(tag, msg, extMsg));
-    }
-
     public static void d(boolean show, @NonNull String tag, @NonNull String msg) {
         d(show, tag, msg, null);
     }
@@ -46,5 +42,13 @@ public class UtilsLog {
 
     public static void d(boolean show, @NonNull Class aClass, @NonNull String msg, @Nullable String extMsg) {
         d(show, aClass.getSimpleName(), msg, extMsg);
+    }
+
+    public static void e(@Nullable String tag, @NonNull String msg, @Nullable String extMsg) {
+        Log.e(LOG_TAG, formatMsg(tag, msg, extMsg));
+    }
+
+    public static void e(@Nullable String tag, @NonNull String msg, @NonNull Exception e) {
+        Log.e(LOG_TAG, formatMsg(tag, msg, "exception == " + e.toString()));
     }
 }

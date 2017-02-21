@@ -4,7 +4,8 @@ import android.support.annotation.NonNull;
 
 import java.util.Date;
 
-public class FileInfo {
+public class FileInfo implements Comparable<FileInfo> {
+
     private final String mMapName;
     private final Date mDate;
 
@@ -37,6 +38,11 @@ public class FileInfo {
         int result = mMapName.hashCode();
         result = 31 * result + mDate.hashCode();
         return result;
+    }
+
+    @Override
+    public int compareTo(@NonNull FileInfo o) {
+        return mMapName.compareTo(o.mMapName);
     }
 
     @Override

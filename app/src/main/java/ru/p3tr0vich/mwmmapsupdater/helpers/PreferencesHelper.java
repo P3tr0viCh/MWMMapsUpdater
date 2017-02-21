@@ -17,7 +17,6 @@ import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Map;
-import java.util.Set;
 
 import ru.p3tr0vich.mwmmapsupdater.R;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
@@ -56,7 +55,7 @@ public class PreferencesHelper {
 
     public static class Keys {
         @Retention(RetentionPolicy.SOURCE)
-        @IntDef({UNKNOWN, PARENT_MAPS_DIR, USED_MAP_DIR, USED_MAP_FILES,
+        @IntDef({UNKNOWN, PARENT_MAPS_DIR,
                 DATE_LOCAL, DATE_SERVER, CHECK_SERVER_DATE_TIME})
         public @interface KeyAsInt {
         }
@@ -65,12 +64,6 @@ public class PreferencesHelper {
 
         public final String parentMapsDir;
         public static final int PARENT_MAPS_DIR = R.string.pref_key_parent_maps_dir;
-
-        public final String usedMapDir;
-        public static final int USED_MAP_DIR = R.string.pref_key_used_map_dir;
-
-        public final String usedMapFiles;
-        public static final int USED_MAP_FILES = R.string.pref_key_used_map_files;
 
         public final String dateLocal;
         public static final int DATE_LOCAL = R.string.pref_key_date_local;
@@ -83,9 +76,6 @@ public class PreferencesHelper {
         private Keys(@NonNull Context context) {
             parentMapsDir = context.getString(PARENT_MAPS_DIR);
 
-            usedMapDir = context.getString(USED_MAP_DIR);
-            usedMapFiles = context.getString(USED_MAP_FILES);
-
             dateLocal = context.getString(DATE_LOCAL);
 
             dateServer = context.getString(DATE_SERVER);
@@ -95,8 +85,6 @@ public class PreferencesHelper {
         @KeyAsInt
         public int getAsInt(@Nullable String key) {
             if (parentMapsDir.equals(key)) return PARENT_MAPS_DIR;
-            if (usedMapDir.equals(key)) return USED_MAP_DIR;
-            if (usedMapFiles.equals(key)) return USED_MAP_FILES;
             if (dateLocal.equals(key)) return DATE_LOCAL;
             if (dateServer.equals(key)) return DATE_SERVER;
             if (checkServerDateTime.equals(key)) return CHECK_SERVER_DATE_TIME;
@@ -133,7 +121,6 @@ public class PreferencesHelper {
             case Keys.UNKNOWN:
                 UtilsLog.e(TAG, "getPreferenceType", "unhandled preference == " + key);
             case Keys.PARENT_MAPS_DIR:
-            case Keys.USED_MAP_DIR:
                 return PREFERENCE_TYPE_STRING;
         }
     }
@@ -167,9 +154,6 @@ public class PreferencesHelper {
             switch (keys.getAsInt(preference)) {
                 case Keys.PARENT_MAPS_DIR:
                     result.put(preference, getParentMapsDir());
-                    break;
-                case Keys.USED_MAP_DIR:
-                    result.put(preference, getUsedMapDir());
                     break;
                 case Keys.DATE_LOCAL:
                     result.put(preference, getDateLocal());
@@ -252,9 +236,6 @@ public class PreferencesHelper {
                 case Keys.PARENT_MAPS_DIR:
                     putParentMapsDir(preferences.getAsString(preference));
                     break;
-                case Keys.USED_MAP_DIR:
-                    putUsedMapDir(preferences.getAsString(preference));
-                    break;
                 case Keys.DATE_LOCAL:
                     putDateLocal(preferences.getAsLong(preference));
                     break;
@@ -298,30 +279,6 @@ public class PreferencesHelper {
         mSharedPreferences
                 .edit()
                 .putString(keys.parentMapsDir, dirName)
-                .apply();
-    }
-
-    @NonNull
-    public String getUsedMapDir() {
-        return getString(keys.usedMapDir);
-    }
-
-    public void putUsedMapDir(@Nullable String usedMapDir) {
-        mSharedPreferences
-                .edit()
-                .putString(keys.usedMapDir, usedMapDir)
-                .apply();
-    }
-
-    @Nullable
-    public Set<String> getUsedMapFiles() {
-        return mSharedPreferences.getStringSet(keys.usedMapFiles, null);
-    }
-
-    public void putUsedMapFiles(@Nullable Set<String> usedMapFiles) {
-        mSharedPreferences
-                .edit()
-                .putStringSet(keys.usedMapFiles, usedMapFiles)
                 .apply();
     }
 

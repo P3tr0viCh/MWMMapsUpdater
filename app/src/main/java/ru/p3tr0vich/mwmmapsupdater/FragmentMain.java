@@ -545,7 +545,7 @@ public class FragmentMain extends FragmentBase implements
             json = new String(buffer, "UTF-8");
         } catch (IOException e) {
             e.printStackTrace();
-            UtilsLog.e(TAG, "getMapNamesAndDescriptions", "error == " + e.toString());
+            UtilsLog.e(TAG, "getMapNamesAndDescriptions", e);
         }
 
         JSONObject jsonObject = null;
@@ -555,7 +555,7 @@ public class FragmentMain extends FragmentBase implements
                 jsonObject = new JSONObject(json);
             } catch (JSONException e) {
                 e.printStackTrace();
-                UtilsLog.e(TAG, "getMapNamesAndDescriptions", "error == " + e.toString());
+                UtilsLog.e(TAG, "getMapNamesAndDescriptions", e);
             }
         }
 
@@ -571,9 +571,10 @@ public class FragmentMain extends FragmentBase implements
         if (data != null) {
             mapDir = data.getMapDir();
 
-            if (data.getResult() == MapFiles.RESULT_OK) {
+            if (data.getResult()) {
                 mDateLocal = data.getDate();
                 updateDateLocal(mDateLocal);
+                preferencesHelper.putDateLocal(mDateLocal.getTime());
 
                 List<MapItem> mapItems = new ArrayList<>();
 
@@ -590,7 +591,7 @@ public class FragmentMain extends FragmentBase implements
                             name = namesAndDescriptions.getString(mapName);
                             description = namesAndDescriptions.getString(mapName + " Description");
                         } catch (JSONException e) {
-                            UtilsLog.e(TAG, "onLoadFinished", "JSONException error == " + e.toString());
+                            UtilsLog.e(TAG, "onLoadFinished", e);
                         }
                     }
 
@@ -606,9 +607,7 @@ public class FragmentMain extends FragmentBase implements
             }
         }
 
-        preferencesHelper.putUsedMapDir(null);
-        preferencesHelper.putUsedMapFiles(null);
-        preferencesHelper.putDateLocal(BAD_DATETIME);
+        preferencesHelper.putDateLocal(BAD_DATETIME); // TODO: delete?
         preferencesHelper.putDateServer(BAD_DATETIME);
 
         mMapItemRecyclerViewAdapter.notifyItemRangeRemoved(0, mMapItemRecyclerViewAdapter.getItemCount());

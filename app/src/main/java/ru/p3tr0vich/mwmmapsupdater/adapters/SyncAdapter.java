@@ -87,14 +87,14 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         else if (e instanceof FormatException) syncResult.stats.numParseExceptions++;
         else syncResult.databaseError = true;
 
-        UtilsLog.e(TAG, "handleException", "error == " + e.toString());
+        UtilsLog.e(TAG, "handleException", e);
     }
 
     @Nullable
     private Date getMapsVersion(@NonNull String parentMapsDir) throws IOException {
         MapFiles mapFiles = MapFilesLocalHelper.find(getContext(), parentMapsDir);
 
-        if (mapFiles.getResult() == MapFiles.RESULT_OK) {
+        if (mapFiles.getResult()) {
             List<String> mapNames = mapFiles.getMapNameList();
 
             Date date = MapFilesServerHelper.getVersion(mapNames);
