@@ -17,16 +17,28 @@ public class UtilsFiles {
 
     private static final String TAG = "UtilsFiles";
 
-    public static boolean deleteAll(@NonNull File fileOrDirectory) {
+    public static boolean recursiveDelete(@NonNull File fileOrDirectory) {
         if (fileOrDirectory.isDirectory()) {
             for (File child : fileOrDirectory.listFiles()) {
-                if (!deleteAll(child)) {
+                if (!recursiveDelete(child)) {
                     return false;
                 }
             }
         }
 
         return fileOrDirectory.delete();
+    }
+
+    public static boolean recursiveDeleteInDirectory(@NonNull File directory) {
+        if (directory.isDirectory()) {
+            for (File child : directory.listFiles()) {
+                if (!recursiveDelete(child)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     @NonNull

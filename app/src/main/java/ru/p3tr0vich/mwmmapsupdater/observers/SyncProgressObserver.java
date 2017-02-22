@@ -9,9 +9,8 @@ import android.text.TextUtils;
 import java.util.Date;
 
 import ru.p3tr0vich.mwmmapsupdater.AppContentProvider;
+import ru.p3tr0vich.mwmmapsupdater.Consts;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
-
-import static ru.p3tr0vich.mwmmapsupdater.helpers.PreferencesHelper.BAD_DATETIME;
 
 public abstract class SyncProgressObserver extends ContentObserverBase {
 
@@ -41,7 +40,7 @@ public abstract class SyncProgressObserver extends ContentObserverBase {
 
                 long checkServerDateTime;
                 if (TextUtils.isEmpty(lastPath)) {
-                    checkServerDateTime = BAD_DATETIME;
+                    checkServerDateTime = Consts.BAD_DATETIME;
                 } else {
                     checkServerDateTime = Long.parseLong(lastPath);
                 }

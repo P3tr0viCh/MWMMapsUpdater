@@ -46,13 +46,13 @@ import ru.p3tr0vich.mwmmapsupdater.adapters.MapItemRecyclerViewAdapter;
 import ru.p3tr0vich.mwmmapsupdater.broadcastreceivers.BroadcastReceiverMapFilesLoading;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ConnectivityHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ContentResolverHelper;
+import ru.p3tr0vich.mwmmapsupdater.models.FileInfo;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
 import ru.p3tr0vich.mwmmapsupdater.models.MapItem;
 import ru.p3tr0vich.mwmmapsupdater.observers.SyncProgressObserver;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsFiles;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
-import static ru.p3tr0vich.mwmmapsupdater.helpers.PreferencesHelper.BAD_DATETIME;
 import static ru.p3tr0vich.mwmmapsupdater.utils.Utils.toast;
 
 public class FragmentMain extends FragmentBase implements
@@ -173,8 +173,8 @@ public class FragmentMain extends FragmentBase implements
             long dateLocal = preferencesHelper.getDateLocal();
             long dateServer = preferencesHelper.getDateServer();
 
-            mDateLocal = dateLocal == BAD_DATETIME ? null : new Date(dateLocal);
-            mDateServer = dateServer == BAD_DATETIME ? null : new Date(dateServer);
+            mDateLocal = dateLocal == Consts.BAD_DATETIME ? null : new Date(dateLocal);
+            mDateServer = dateServer == Consts.BAD_DATETIME ? null : new Date(dateServer);
 
             mCheckServerDateTime = preferencesHelper.getCheckServerDateTime();
         } else {
@@ -339,7 +339,7 @@ public class FragmentMain extends FragmentBase implements
 
                 break;
             case R.id.action_main_delete_mwm_dir:
-                result = UtilsFiles.deleteAll(mapDir);
+                result = UtilsFiles.recursiveDelete(mapDir);
 
                 break;
             case R.id.action_main_create_mwm_sub_dir:
@@ -374,7 +374,7 @@ public class FragmentMain extends FragmentBase implements
                         if (result && file.isDirectory()) {
                             UtilsLog.d(LOG_ENABLED, TAG, "delete sub dir", file.getName());
 
-                            result = UtilsFiles.deleteAll(file);
+                            result = UtilsFiles.recursiveDelete(file);
                         }
                     }
                 }
@@ -487,18 +487,23 @@ public class FragmentMain extends FragmentBase implements
                             }
                         }
                     } else {
-                        File file1 = new File(mapSubDir, "Abkhazia.mwm");
-                        File file2 = new File(mapSubDir, "Russia_Orenburg Oblast.mwm");
-                        File file3 = new File(mapSubDir, "Russia_Omsk Oblast.mwm");
+                        File file1 = new File(mapSubDir, random.nextBoolean() ? "Anguilla.mwm" : "Andorra.mwm");
+                        File file2 = new File(mapSubDir, random.nextBoolean() ? "Tuvalu.mwm" : "Tokelau.mwm");
+                        File file3 = new File(mapSubDir, random.nextBoolean() ? "Spain_Ceuta.mwm" : "British Indian Ocean Territory.mwm");
 
-                        if (file1.delete() && file2.delete() && file3.delete()) {
-                            UtilsLog.d(LOG_ENABLED, TAG, "existing files deleted in ", mapSubDir.getAbsolutePath());
+                        if (UtilsFiles.recursiveDeleteInDirectory(mapSubDir)) {
+                            UtilsLog.d(LOG_ENABLED, TAG, "existing files deleted in", mapSubDir.getAbsolutePath());
                         }
 
                         try {
                             result = file1.createNewFile() &&
                                     file2.createNewFile() &&
                                     file3.createNewFile();
+
+                            if (result) {
+                                UtilsLog.d(LOG_ENABLED, TAG, "created files",
+                                        "[" + file1.getName() + ", " + file2.getName() + ", " + file3.getName() + "]");
+                            }
                         } catch (IOException e) {
                             result = false;
                         }
@@ -571,24 +576,29 @@ public class FragmentMain extends FragmentBase implements
         if (data != null) {
             mapDir = data.getMapDir();
 
-            if (data.getResult()) {
-                mDateLocal = data.getDate();
+            List<FileInfo> fileInfoList = data.getFileList();
+
+            if (!fileInfoList.isEmpty()) {
+
+                long timeStamp = data.getTimestamp();
+
+                mDateLocal = timeStamp == Consts.BAD_DATETIME ? null : new Date(timeStamp);
                 updateDateLocal(mDateLocal);
                 preferencesHelper.putDateLocal(mDateLocal.getTime());
 
                 List<MapItem> mapItems = new ArrayList<>();
 
-                List<String> mapNames = data.getMapNameList();
-
                 JSONObject namesAndDescriptions = getMapNamesAndDescriptions();
 
-                for (String mapName : mapNames) {
+                for (FileInfo fileInfo : fileInfoList) {
+                    String mapName = fileInfo.getMapName();
+
                     String name = mapName;
                     String description = null;
 
                     if (namesAndDescriptions != null) {
                         try {
-                            name = namesAndDescriptions.getString(mapName);
+                            name = namesAndDescriptions.getString(name);
                             description = namesAndDescriptions.getString(mapName + " Description");
                         } catch (JSONException e) {
                             UtilsLog.e(TAG, "onLoadFinished", e);
@@ -607,8 +617,10 @@ public class FragmentMain extends FragmentBase implements
             }
         }
 
-        preferencesHelper.putDateLocal(BAD_DATETIME); // TODO: delete?
-        preferencesHelper.putDateServer(BAD_DATETIME);
+        // data == null or file list empty
+
+        preferencesHelper.putDateLocal(Consts.BAD_DATETIME); // TODO: delete?
+        preferencesHelper.putDateServer(Consts.BAD_DATETIME);
 
         mMapItemRecyclerViewAdapter.notifyItemRangeRemoved(0, mMapItemRecyclerViewAdapter.getItemCount());
 

@@ -5,6 +5,8 @@ import android.support.annotation.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 
+import ru.p3tr0vich.mwmmapsupdater.Consts;
+
 public class MapFiles {
 
     private long mTimestamp;
@@ -15,6 +17,7 @@ public class MapFiles {
     private final List<FileInfo> mFileList;
 
     public MapFiles() {
+        mTimestamp = Consts.BAD_DATETIME;
         mFileList = new ArrayList<>();
     }
 
@@ -52,18 +55,6 @@ public class MapFiles {
     public void setFileList(@NonNull List<FileInfo> fileList) {
         mFileList.clear();
         mFileList.addAll(fileList);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        MapFiles that = (MapFiles) o;
-
-        return mMapDir.equals(that.mMapDir) &&
-                mMapSubDir.equals(that.mMapSubDir) &&
-                mFileList.equals(that.mFileList);
     }
 
     @Override

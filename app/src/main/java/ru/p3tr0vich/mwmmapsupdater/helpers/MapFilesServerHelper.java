@@ -7,15 +7,11 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.Random;
-import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
@@ -112,12 +108,6 @@ public class MapFilesServerHelper {
         UtilsLog.d(LOG_ENABLED, TAG, "getFileInfoList", "end");
 
         return fileInfoList;
-    }
-
-    private static final DateFormat DATE_FORMAT = new SimpleDateFormat("dd-MMM-yyyy HH:mm", Locale.US);
-
-    static {
-        DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
     }
 
     @Nullable

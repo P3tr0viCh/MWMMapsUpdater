@@ -13,19 +13,20 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
-import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesLocalHelper;
+import ru.p3tr0vich.mwmmapsupdater.Consts;
+import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesServerHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ProviderPreferencesHelper;
+import ru.p3tr0vich.mwmmapsupdater.models.FileInfo;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
 import ru.p3tr0vich.mwmmapsupdater.observers.SyncProgressObserver;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
-
-import static ru.p3tr0vich.mwmmapsupdater.helpers.PreferencesHelper.BAD_DATETIME;
 
 public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
@@ -54,7 +55,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
-                        UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "wait... " + (waitSeconds - i));
+                        UtilsLog.d(true, TAG, "onPerformSync", "wait... " + (waitSeconds - i));
                     }
                 }
 
@@ -66,7 +67,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                 providerPreferencesHelper.putCheckServerDateTime(currentTimeMillis);
                 SyncProgressObserver.notifyCheckServerDateTime(getContext(), currentTimeMillis);
 
-                providerPreferencesHelper.putDateServer(date != null ? date.getTime() : BAD_DATETIME);
+                providerPreferencesHelper.putDateServer(date != null ? date.getTime() : Consts.BAD_DATETIME);
                 SyncProgressObserver.notifyDateChecked(getContext(), date);
             } catch (Exception e) {
                 handleException(e, syncResult);
@@ -92,20 +93,26 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
     @Nullable
     private Date getMapsVersion(@NonNull String parentMapsDir) throws IOException {
-        MapFiles mapFiles = MapFilesLocalHelper.find(getContext(), parentMapsDir);
+        MapFiles mapFiles = MapFilesHelper.find(getContext(), parentMapsDir);
 
-        if (mapFiles.getResult()) {
-            List<String> mapNames = mapFiles.getMapNameList();
+        List<FileInfo> fileInfoList = mapFiles.getFileList();
 
-            Date date = MapFilesServerHelper.getVersion(mapNames);
+        if (fileInfoList.isEmpty()) {
+            UtilsLog.e(TAG, "getMapsVersion", "fileInfoList  empty");
 
-            UtilsLog.d(LOG_ENABLED, TAG, "getMapsVersion", "date == " + date);
-
-            return date;
+            return null;
         }
 
-        UtilsLog.e(TAG, "getMapsVersion", "date  == null");
+        List<String> mapNames = new ArrayList<>();
 
-        return null;
+        for (FileInfo fileInfo : fileInfoList) {
+            mapNames.add(fileInfo.getMapName());
+        }
+
+        Date date = MapFilesServerHelper.getVersion(mapNames);
+
+        UtilsLog.d(LOG_ENABLED, TAG, "getMapsVersion", "date == " + date);
+
+        return date;
     }
 }

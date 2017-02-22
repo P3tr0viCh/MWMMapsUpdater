@@ -11,17 +11,15 @@ public class ActivityMain extends AppCompatActivity implements
         FragmentMain.OnListFragmentInteractionListener,
         FragmentInterface.OnFragmentChangeListener {
 
-    private FragmentHelper mFragmentHelper;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        mFragmentHelper = new FragmentHelper(this);
+        FragmentHelper fragmentHelper = new FragmentHelper(this);
 
         if (savedInstanceState == null) {
-            mFragmentHelper.addMainFragment();
+            fragmentHelper.addMainFragment();
         }
     }
 

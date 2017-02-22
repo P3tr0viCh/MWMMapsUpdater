@@ -20,6 +20,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -176,186 +177,53 @@ public class MapFilesHelper {
         return 0;
     }
 
-    public static class FindResult {
-        public final boolean result;
-        @Nullable
-        public final MapFiles mapFiles;
+    @NonNull
+    public static MapFiles find(@NonNull Context context, @NonNull String parentMapsDir) {
+        MapFiles mapFiles = findFiles(parentMapsDir);
 
-        public FindResult(boolean result, @Nullable MapFiles mapFiles) {
-            this.result = result;
-            this.mapFiles = mapFiles;
+        if (mapFiles.getFileList().isEmpty()) {
+            deleteJSONFile(context);
+        } else {
+            checkFiles(context, mapFiles);
         }
-    }
 
-//    public static FindResult find2(@NonNull Context context, @NonNull String parentMapsDir) {
-//        if (BuildConfig.DEBUG && WAIT_ENABLED) {
-//            for (int i = 0, waitSeconds = 3; i < waitSeconds; i++) {
-//                try {
-//                    TimeUnit.SECONDS.sleep(1);
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-//                UtilsLog.d(true, TAG, "find", "wait... " + (waitSeconds - i));
-//            }
-//        }
-//
-//        boolean result;
-//        String mapSubDirName = "";
-//        List<FileInfo> fileInfoList = new ArrayList<>();
-//
-//        if (!parentMapsDir.isEmpty()) {
-//
-//            File mapDir = new File(parentMapsDir);
-//
-//            if (mapDir.exists() && mapDir.isDirectory()) {
-//                File[] listFiles = mapDir.listFiles();
-//
-//                if (listFiles != null) {
-//                    List<String> subDirNamesList = new ArrayList<>();
-//
-//                    String fileName;
-//
-//                    Matcher matcher;
-//
-//                    for (File file : listFiles) {
-//                        if (file.isDirectory()) {
-//                            fileName = file.getName();
-//
-//                            matcher = MAP_SUB_DIR_NAME_PATTERN.matcher(fileName);
-//
-//                            if (matcher.find()) {
-//                                subDirNamesList.add(fileName);
-//                            }
-//                        }
-//                    }
-//
-//                    if (subDirNamesList.isEmpty()) {
-//                        result = false;
-//                    } else {
-//                        Collections.sort(subDirNamesList, MAP_SUB_DIR_COMPARATOR);
-//
-//                        mapSubDirName = subDirNamesList.get(0);
-//
-//                        File mapSubDir = new File(mapDir, mapSubDirName);
-//                        listFiles = mapSubDir.listFiles();
-//
-//                        if (listFiles != null) {
-//                            List<String> mapNameList = new ArrayList<>();
-//
-//                            for (File file : listFiles) {
-//                                if (file.isFile()) {
-//                                    fileName = file.getName();
-//
-//                                    matcher = MAP_FILE_NAME_PATTERN.matcher(fileName);
-//
-//                                    if (matcher.find()) {
-//                                        // fileName без расширения
-//                                        String mapName = matcher.group(MAP_FILE_NAME_PATTERN_GROUP_INDEX);
-//
-//                                        mapNameList.add(mapName);
-//                                    }
-//                                }
-//                            }
-//
-//                            if (mapNameList.isEmpty()) {
-//                                result = false;
-//                            } else {
-//                                for (String mapName : mapNameList) {
-//                                    FileInfo fileInfo = getFileInfo(mapSubDir, mapName);
-//
-//                                    UtilsLog.d(LOG_ENABLED, TAG, "find", "fileInfo == " + fileInfo);
-//
-//                                    if (fileInfo != null) {
-//                                        fileInfoList.add(fileInfo);
-//                                    }
-//                                }
-//
-//                                if (fileInfoList.isEmpty()) {
-//                                    result = false;
-//                                } else {
-//                                    Collections.sort(fileInfoList);
-//                                    result = true;
-//                                }
-//                            }
-//                        } else {
-//                            result = false;
-//                        }
-//                    }
-//                } else {
-//                    result = false;
-//                }
-//            } else {
-//                result = false;
-//            }
-//        } else {
-//            result = false;
-//        }
-//
-//        Date date;
-//
-//        if (result) {
-//            LocalMapsInfo localMapsInfo = new LocalMapsInfo(context, mapSubDirName, fileInfoList);
-//
-//            LocalMapsInfo usedLocalMapsInfo = new LocalMapsInfo(context);
-//
-//            boolean filesEquals = usedLocalMapsInfo.readFromJSONFile();
-//
-//            if (filesEquals) {
-//                filesEquals = usedLocalMapsInfo.equals(localMapsInfo);
-//            }
-//
-//            if (filesEquals) {
-//                date = usedLocalMapsInfo.getDate();
-//            } else {
-//                date = localMapsInfo.getDate();
-//                localMapsInfo.writeToJSONFile();
-//            }
-//
-//            UtilsLog.d(LOG_ENABLED, TAG, "find", "filesEquals == " + filesEquals);
-//        } else {
-//            date = new Date();
-//            LocalMapsInfo.deleteJSONFile(context);
-//        }
-//
-//        return new MapFiles(result, parentMapsDir, mapSubDirName, fileInfoList, date);
-//    }
+        return mapFiles;
+    }
 
     @NonNull
-    public static FindResult find(@NonNull Context context, @NonNull String parentMapsDir) {
-        MapFiles mapFiles = findFiles(context, parentMapsDir);
-        if (mapFiles != null) {
-            checkFiles(context, mapFiles);
-
-            return new FindResult(true, mapFiles);
-        } else {
-            deleteJSONFile(context);
-
-            return new FindResult(false, null);
+    private static MapFiles findFiles(@NonNull String mapDirName) {
+        if (BuildConfig.DEBUG && WAIT_ENABLED) {
+            for (int i = 0, waitSeconds = 5; i < waitSeconds; i++) {
+                try {
+                    TimeUnit.SECONDS.sleep(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                UtilsLog.d(true, TAG, "findFiles", "wait... " + (waitSeconds - i));
+            }
         }
-    }
 
-    @Nullable
-    private static MapFiles findFiles(@NonNull Context context, @NonNull String mapDirName) {
-        String mapSubDirName = "";
-        List<FileInfo> fileInfoList = new ArrayList<>();
+        MapFiles mapFiles = new MapFiles();
 
         if (mapDirName.isEmpty()) {
             UtilsLog.e(TAG, "findFiles", "Maps directory empty");
-            return null;
+            return mapFiles;
         }
 
         File mapDir = new File(mapDirName);
 
         if (!mapDir.exists() || !mapDir.isDirectory()) {
             UtilsLog.e(TAG, "findFiles", "Maps directory not exists or not directory");
-            return null;
+            return mapFiles;
         }
+
+        mapFiles.setMapDir(mapDirName);
 
         File[] listFiles = mapDir.listFiles();
 
         if (listFiles == null || listFiles.length == 0) {
             UtilsLog.e(TAG, "findFiles", "Maps directory empty");
-            return null;
+            return mapFiles;
         }
 
         List<String> subDirNamesList = new ArrayList<>();
@@ -378,19 +246,21 @@ public class MapFilesHelper {
 
         if (subDirNamesList.isEmpty()) {
             UtilsLog.e(TAG, "findFiles", "Subdirectories not exists");
-            return null;
+            return mapFiles;
         }
 
         Collections.sort(subDirNamesList, MAP_SUB_DIR_COMPARATOR);
 
-        mapSubDirName = subDirNamesList.get(0);
+        String mapSubDirName = subDirNamesList.get(0);
+
+        mapFiles.setMapSubDir(mapSubDirName);
 
         File mapSubDir = new File(mapDir, mapSubDirName);
         listFiles = mapSubDir.listFiles();
 
         if (listFiles == null || listFiles.length == 0) {
             UtilsLog.e(TAG, "findFiles", "Subdirectory empty");
-            return null;
+            return mapFiles;
         }
 
         List<String> mapNameList = new ArrayList<>();
@@ -412,8 +282,10 @@ public class MapFilesHelper {
 
         if (mapNameList.isEmpty()) {
             UtilsLog.e(TAG, "findFiles", "Map files in subdirectory not exists");
-            return null;
+            return mapFiles;
         }
+
+        List<FileInfo> fileInfoList = new ArrayList<>();
 
         for (String mapName : mapNameList) {
             FileInfo fileInfo = getFileInfo(mapSubDir, mapName);
@@ -427,15 +299,11 @@ public class MapFilesHelper {
 
         if (fileInfoList.isEmpty()) {
             UtilsLog.e(TAG, "findFiles", "Map files read file info error");
-            return null;
+            return mapFiles;
         }
 
         Collections.sort(fileInfoList);
 
-        MapFiles mapFiles = new MapFiles();
-
-        mapFiles.setMapDir(mapDirName);
-        mapFiles.setMapSubDir(mapSubDirName);
         mapFiles.setFileList(fileInfoList);
 
         return mapFiles;
@@ -443,11 +311,15 @@ public class MapFilesHelper {
 
     private static void checkFiles(@NonNull Context context, @NonNull MapFiles mapFiles) {
         MapFiles savedMapFiles = new MapFiles();
+
         boolean filesEquals = readFromJSONFile(context, savedMapFiles);
 
         if (filesEquals) {
-            filesEquals = mapFiles.equals(savedMapFiles);
+            filesEquals = mapFiles.getMapSubDir().equals(savedMapFiles.getMapSubDir()) &&
+                    mapFiles.getFileList().equals(savedMapFiles.getFileList());
         }
+
+        UtilsLog.d(LOG_ENABLED, TAG, "checkFiles", "filesEquals == " + filesEquals);
 
         if (filesEquals) {
             mapFiles.setTimestamp(savedMapFiles.getTimestamp());
@@ -455,7 +327,5 @@ public class MapFilesHelper {
             mapFiles.setTimestamp(mapDirNameToDate(mapFiles.getMapSubDir()));
             writeToJSONFile(context, mapFiles);
         }
-
-        UtilsLog.d(LOG_ENABLED, TAG, "checkFiles", "filesEquals == " + filesEquals);
     }
 }

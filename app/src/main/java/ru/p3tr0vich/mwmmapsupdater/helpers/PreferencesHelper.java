@@ -18,6 +18,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Map;
 
+import ru.p3tr0vich.mwmmapsupdater.Consts;
 import ru.p3tr0vich.mwmmapsupdater.R;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
@@ -29,11 +30,6 @@ public class PreferencesHelper {
     private static final String TAG = "PreferencesHelper";
 
     private static final boolean LOG_ENABLED = false;
-
-    /**
-     * Ошибочное время.
-     */
-    public static final int BAD_DATETIME = 0;
 
     /**
      * Имя каталога с картами по умолчанию.
@@ -283,7 +279,7 @@ public class PreferencesHelper {
     }
 
     public long getDateLocal() {
-        return mSharedPreferences.getLong(keys.dateLocal, BAD_DATETIME);
+        return mSharedPreferences.getLong(keys.dateLocal, Consts.BAD_DATETIME);
     }
 
     public void putDateLocal(long date) {
@@ -294,7 +290,7 @@ public class PreferencesHelper {
     }
 
     public long getDateServer() {
-        return mSharedPreferences.getLong(keys.dateServer, BAD_DATETIME);
+        return mSharedPreferences.getLong(keys.dateServer, Consts.BAD_DATETIME);
     }
 
     public void putDateServer(long date) {
@@ -305,7 +301,7 @@ public class PreferencesHelper {
     }
 
     public long getCheckServerDateTime() {
-        return mSharedPreferences.getLong(keys.checkServerDateTime, BAD_DATETIME);
+        return mSharedPreferences.getLong(keys.checkServerDateTime, Consts.BAD_DATETIME);
     }
 
     public void putCheckServerDateTime(long dateTime) {
