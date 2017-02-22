@@ -24,8 +24,8 @@ public class MapFilesServerHelper {
 
     private static final boolean LOG_ENABLED = false;
 
-    private static final boolean DUMMY_FILE_INFO = true;
-    private static final boolean FILE_INFO_WAIT_ENABLED = false;
+    private static final boolean DEBUG_DUMMY_FILE_INFO = true;
+    private static final boolean DEBUG_FILE_INFO_WAIT_ENABLED = false;
 
     private static final String PROTOCOL = "http";
     private static final String HOST = "direct.mapswithme.com";
@@ -47,7 +47,7 @@ public class MapFilesServerHelper {
     @Nullable
     private static FileInfo getFileInfo(@NonNull String mapName) throws IOException {
 
-        if (BuildConfig.DEBUG && FILE_INFO_WAIT_ENABLED) {
+        if (BuildConfig.DEBUG && DEBUG_FILE_INFO_WAIT_ENABLED) {
             try {
                 TimeUnit.SECONDS.sleep(1);
             } catch (InterruptedException e) {
@@ -57,7 +57,7 @@ public class MapFilesServerHelper {
 
         long lastModified;
 
-        if (BuildConfig.DEBUG && DUMMY_FILE_INFO) {
+        if (BuildConfig.DEBUG && DEBUG_DUMMY_FILE_INFO) {
             Random rand = new Random();
 
             lastModified = -946771200000L + (Math.abs(rand.nextLong()) % (70L * 365 * 24 * 60 * 60 * 1000));
@@ -110,8 +110,8 @@ public class MapFilesServerHelper {
         return fileInfoList;
     }
 
-    public static long getVersion(@NonNull List<String> mapNames) throws IOException {
-        if (BuildConfig.DEBUG && DUMMY_FILE_INFO) {
+    public static long getTimestamp(@NonNull List<String> mapNames) throws IOException {
+        if (BuildConfig.DEBUG && DEBUG_DUMMY_FILE_INFO) {
             Random rand = new Random();
 
             if (rand.nextBoolean()) {

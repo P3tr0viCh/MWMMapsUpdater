@@ -5,10 +5,16 @@ import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.Log;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
+
 import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
 
 public class UtilsLog {
     private static final String LOG_TAG = "XXX";
+
+    public static final DateFormat DATETIME_FORMAT = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault());
 
     private static String formatMsg(@Nullable String tag, @NonNull String msg, @Nullable String extMsg) {
         if (!TextUtils.isEmpty(tag)) {
@@ -23,7 +29,7 @@ public class UtilsLog {
     }
 
     public static void d(boolean show, @Nullable String tag, @NonNull String msg, @Nullable String extMsg) {
-        if (show && BuildConfig.DEBUG) {
+        if (BuildConfig.DEBUG && show) {
             Log.d(LOG_TAG, formatMsg(tag, msg, extMsg));
         }
     }

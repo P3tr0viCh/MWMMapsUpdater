@@ -13,7 +13,6 @@ import android.support.annotation.NonNull;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -33,7 +32,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
     private static final boolean LOG_ENABLED = true;
 
-    private static final boolean WAIT_ENABLED = false;
+    private static final boolean DEBUG_WAIT_ENABLED = false;
+    private static final boolean DEBUG_ALWAYS_HAS_UPDATES = true;
 
     public SyncAdapter(Context context) {
         super(context, true);
@@ -47,7 +47,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
         try {
             try {
-                if (BuildConfig.DEBUG && WAIT_ENABLED) {
+                if (BuildConfig.DEBUG && DEBUG_WAIT_ENABLED) {
                     for (int i = 0, waitSeconds = 5; i < waitSeconds; i++) {
                         try {
                             TimeUnit.SECONDS.sleep(1);
@@ -60,15 +60,45 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
                 String parentMapsDir = providerPreferencesHelper.getParentMapsDir();
 
-                long serverMapsTimestamp = getMapsVersion(parentMapsDir);
+                MapFiles mapFiles = MapFilesHelper.find(getContext(), parentMapsDir);
 
-                long currentTimeMillis = System.currentTimeMillis();
+                final long localMapsTimestamp = mapFiles.getTimestamp();
+
+                final long serverMapsTimestamp = getServerMapsTimestamp(mapFiles);
+
+                final long currentTimeMillis = System.currentTimeMillis();
+
+                UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync",
+                        "local maps date == " +
+                                (localMapsTimestamp != Consts.BAD_DATETIME ?
+                                        UtilsLog.DATETIME_FORMAT.format(localMapsTimestamp) :
+                                        "BAD_DATETIME") +
+                                ", server maps date == " +
+                                (serverMapsTimestamp != Consts.BAD_DATETIME ?
+                                        UtilsLog.DATETIME_FORMAT.format(serverMapsTimestamp) : "BAD_DATETIME") +
+                                ", current date == " +
+                                UtilsLog.DATETIME_FORMAT.format(currentTimeMillis));
 
                 providerPreferencesHelper.putCheckServerDateTime(currentTimeMillis);
                 SyncProgressObserver.notifyCheckServerDateTime(getContext(), currentTimeMillis);
 
                 providerPreferencesHelper.putDateServer(serverMapsTimestamp);
                 SyncProgressObserver.notifyDateChecked(getContext(), serverMapsTimestamp);
+
+                if (localMapsTimestamp == Consts.BAD_DATETIME) {
+                    throw new IOException("localMapsTimestamp == BAD_DATETIME");
+                }
+                if (serverMapsTimestamp == Consts.BAD_DATETIME) {
+                    throw new IOException("serverMapsTimestamp == BAD_DATETIME");
+                }
+
+                UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync",
+                        "serverMapsTimestamp > localMapsTimestamp == " + (serverMapsTimestamp > localMapsTimestamp));
+
+                if ((serverMapsTimestamp > localMapsTimestamp) || (BuildConfig.DEBUG && DEBUG_ALWAYS_HAS_UPDATES)) {
+                    // TODO: 22.02.2017
+                    UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "has updates");
+                }
             } catch (Exception e) {
                 handleException(e, syncResult);
             }
@@ -91,13 +121,11 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         UtilsLog.e(TAG, "handleException", e);
     }
 
-    private long getMapsVersion(@NonNull String parentMapsDir) throws IOException {
-        MapFiles mapFiles = MapFilesHelper.find(getContext(), parentMapsDir);
-
+    private long getServerMapsTimestamp(@NonNull MapFiles mapFiles) throws IOException {
         List<FileInfo> fileInfoList = mapFiles.getFileList();
 
         if (fileInfoList.isEmpty()) {
-            UtilsLog.e(TAG, "getMapsVersion", "fileInfoList  empty");
+            UtilsLog.e(TAG, "getServerMapsTimestamp", "fileInfoList empty");
 
             return Consts.BAD_DATETIME;
         }
@@ -108,11 +136,6 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
             mapNames.add(fileInfo.getMapName());
         }
 
-        long timestamp = MapFilesServerHelper.getVersion(mapNames);
-
-        UtilsLog.d(LOG_ENABLED, TAG, "getMapsVersion",
-                "return " + (timestamp == Consts.BAD_DATETIME ? "BAD_DATETIME" : new Date(timestamp)));
-
-        return timestamp;
+        return MapFilesServerHelper.getTimestamp(mapNames);
     }
 }

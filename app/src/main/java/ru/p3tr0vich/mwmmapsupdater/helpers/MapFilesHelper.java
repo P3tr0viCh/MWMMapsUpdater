@@ -37,8 +37,8 @@ public class MapFilesHelper {
 
     private static final boolean LOG_ENABLED = true;
 
-    private static final boolean DUMMY_FILE_INFO = false;
-    private static final boolean WAIT_ENABLED = false;
+    private static final boolean DEBUG_DUMMY_FILE_INFO = false;
+    private static final boolean DEBUG_WAIT_ENABLED = false;
 
     private static final Comparator<String> MAP_SUB_DIR_COMPARATOR = new Comparator<String>() {
         @Override
@@ -153,7 +153,7 @@ public class MapFilesHelper {
     private static FileInfo getFileInfo(@NonNull File mapSubDir, @NonNull String mapName) {
         long lastModified;
 
-        if (BuildConfig.DEBUG && DUMMY_FILE_INFO) {
+        if (BuildConfig.DEBUG && DEBUG_DUMMY_FILE_INFO) {
             Random rand = new Random();
 
             lastModified = -946771200000L + (Math.abs(rand.nextLong()) % (70L * 365 * 24 * 60 * 60 * 1000));
@@ -200,7 +200,7 @@ public class MapFilesHelper {
 
     @NonNull
     private static MapFiles findFiles(@NonNull String mapDirName) {
-        if (BuildConfig.DEBUG && WAIT_ENABLED) {
+        if (BuildConfig.DEBUG && DEBUG_WAIT_ENABLED) {
             for (int i = 0, waitSeconds = 5; i < waitSeconds; i++) {
                 try {
                     TimeUnit.SECONDS.sleep(1);
@@ -366,9 +366,6 @@ public class MapFilesHelper {
 
             timestamp = dates.get(0);
         }
-
-        UtilsLog.d(LOG_ENABLED, TAG, "getLatestTimestamp",
-                "return " + (timestamp == Consts.BAD_DATETIME ? "BAD_DATETIME" : new Date(timestamp)));
 
         return timestamp;
     }
