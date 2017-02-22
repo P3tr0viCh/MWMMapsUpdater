@@ -3,10 +3,7 @@ package ru.p3tr0vich.mwmmapsupdater.observers;
 import android.content.Context;
 import android.net.Uri;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.text.TextUtils;
-
-import java.util.Date;
 
 import ru.p3tr0vich.mwmmapsupdater.AppContentProvider;
 import ru.p3tr0vich.mwmmapsupdater.Consts;
@@ -53,33 +50,33 @@ public abstract class SyncProgressObserver extends ContentObserverBase {
 
                 UtilsLog.d(LOG_ENABLED, TAG, "onChange", "uriMatch == SYNC_PROGRESS_DATE_CHECKED_ITEM, lastPath == " + lastPath);
 
-                Date date;
+                long dateChecked;
                 if (TextUtils.isEmpty(lastPath)) {
-                    date = null;
+                    dateChecked = Consts.BAD_DATETIME;
                 } else {
-                    date = new Date(Long.parseLong(lastPath));
+                    dateChecked = Long.parseLong(lastPath);
                 }
 
-                onDateChecked(date);
+                onDateChecked(dateChecked);
 
                 break;
         }
     }
 
-    public abstract void onCheckServerDateTime(long dateTime);
+    public abstract void onCheckServerDateTime(long timestamp);
 
-    public abstract void onDateChecked(@Nullable Date date);
+    public abstract void onDateChecked(long timestamp);
 
-    public static void notifyCheckServerDateTime(@NonNull Context context, long date) {
+    public static void notifyCheckServerDateTime(@NonNull Context context, long timestamp) {
         Uri uri = Uri.withAppendedPath(AppContentProvider.UriList.SYNC_PROGRESS_CHECK_SERVER_DATETIME,
-                String.valueOf(date));
+                String.valueOf(timestamp));
 
         notifyChange(context, uri);
     }
 
-    public static void notifyDateChecked(@NonNull Context context, @Nullable Date date) {
+    public static void notifyDateChecked(@NonNull Context context, long timestamp) {
         Uri uri = Uri.withAppendedPath(AppContentProvider.UriList.SYNC_PROGRESS_DATE_CHECKED,
-                date != null ? String.valueOf(date.getTime()) : "");
+                String.valueOf(timestamp));
 
         notifyChange(context, uri);
     }

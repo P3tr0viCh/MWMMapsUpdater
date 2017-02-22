@@ -8,13 +8,13 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
+import ru.p3tr0vich.mwmmapsupdater.Consts;
 import ru.p3tr0vich.mwmmapsupdater.models.FileInfo;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
@@ -110,34 +110,17 @@ public class MapFilesServerHelper {
         return fileInfoList;
     }
 
-    @Nullable
-    public static Date getVersion(@NonNull List<String> mapNames) throws IOException {
+    public static long getVersion(@NonNull List<String> mapNames) throws IOException {
         if (BuildConfig.DEBUG && DUMMY_FILE_INFO) {
             Random rand = new Random();
 
             if (rand.nextBoolean()) {
-                return null;
+                return Consts.BAD_DATETIME;
             }
         }
 
         List<FileInfo> fileInfoList = getFileInfoList(mapNames);
 
-        List<Date> dates = new ArrayList<>();
-
-        for (FileInfo fileInfo : fileInfoList) {
-            dates.add(fileInfo.getDate());
-        }
-
-        if (dates.isEmpty()) {
-            UtilsLog.d(LOG_ENABLED, TAG, "getVersion", "return null");
-
-            return null;
-        } else {
-            Collections.sort(dates);
-
-            UtilsLog.d(LOG_ENABLED, TAG, "getVersion", "return " + dates.get(0));
-
-            return dates.get(0);
-        }
+        return MapFilesHelper.getLatestTimestamp(fileInfoList);
     }
 }

@@ -83,8 +83,8 @@ public class FragmentMain extends FragmentBase implements
     private ImageView mImgCheckServer;
     private Animation mAnimationCheckServer;
 
-    private Date mDateLocal;
-    private Date mDateServer;
+    private long mDateLocal;
+    private long mDateServer;
     private long mCheckServerDateTime;
 
     private MapItemRecyclerViewAdapter mMapItemRecyclerViewAdapter;
@@ -170,16 +170,14 @@ public class FragmentMain extends FragmentBase implements
         getLoaderManager().initLoader(MAP_FILES_LOADER_ID, null, this);
 
         if (savedInstanceState == null) {
-            long dateLocal = preferencesHelper.getDateLocal();
-            long dateServer = preferencesHelper.getDateServer();
-
-            mDateLocal = dateLocal == Consts.BAD_DATETIME ? null : new Date(dateLocal);
-            mDateServer = dateServer == Consts.BAD_DATETIME ? null : new Date(dateServer);
+            mDateLocal = preferencesHelper.getDateLocal();
+            mDateServer = preferencesHelper.getDateServer();
 
             mCheckServerDateTime = preferencesHelper.getCheckServerDateTime();
         } else {
-            mDateLocal = (Date) savedInstanceState.getSerializable(KEY_DATE_LOCAL);
-            mDateServer = (Date) savedInstanceState.getSerializable(KEY_DATE_SERVER);
+            mDateLocal = savedInstanceState.getLong(KEY_DATE_LOCAL, Consts.BAD_DATETIME);
+            mDateServer = savedInstanceState.getLong(KEY_DATE_SERVER, Consts.BAD_DATETIME);
+
             mCheckServerDateTime = savedInstanceState.getLong(KEY_CHECK_SERVER_DATE_TIME);
         }
     }
@@ -192,7 +190,8 @@ public class FragmentMain extends FragmentBase implements
 
         mSyncMonitor = ContentResolver.addStatusChangeListener(ContentResolver.SYNC_OBSERVER_TYPE_ACTIVE, this);
 
-        if (((System.currentTimeMillis() - mCheckServerDateTime) > RECHECK_SERVER_MILLIS) || mDateServer == null) {
+        if (((System.currentTimeMillis() - mCheckServerDateTime) > RECHECK_SERVER_MILLIS) ||
+                (mDateServer == Consts.BAD_DATETIME)) {
             ContentResolverHelper.requestSync(mAppAccount);
         } else {
             updateDateServer(mDateServer);
@@ -256,14 +255,14 @@ public class FragmentMain extends FragmentBase implements
     private void initSyncProgressObserver() {
         mSyncProgressObserver = new SyncProgressObserver() {
             @Override
-            public void onCheckServerDateTime(long dateTime) {
-                mCheckServerDateTime = dateTime;
+            public void onCheckServerDateTime(long timestamp) {
+                mCheckServerDateTime = timestamp;
             }
 
             @Override
-            public void onDateChecked(@Nullable Date date) {
-                mDateServer = date;
-                updateDateServer(date);
+            public void onDateChecked(long timestamp) {
+                mDateServer = timestamp;
+                updateDateServer(mDateServer);
             }
         };
         mSyncProgressObserver.register(getContext());
@@ -291,16 +290,16 @@ public class FragmentMain extends FragmentBase implements
         }
     };
 
-    private void updateTextDate(@NonNull TextView textView, @Nullable Date date) {
-        textView.setText(date != null ? DATE_FORMAT.format(date) : getString(R.string.text_error_date_server_null));
+    private void updateTextDate(@NonNull TextView textView, long timestamp) {
+        textView.setText(timestamp != Consts.BAD_DATETIME ? DATE_FORMAT.format(new Date(timestamp)) : getString(R.string.text_error_date_server_null));
     }
 
-    private void updateDateLocal(@Nullable Date date) {
-        updateTextDate(mTextDateLocal, date);
+    private void updateDateLocal(long timestamp) {
+        updateTextDate(mTextDateLocal, timestamp);
     }
 
-    private void updateDateServer(@Nullable Date date) {
-        updateTextDate(mTextDateServer, date);
+    private void updateDateServer(long timestamp) {
+        updateTextDate(mTextDateServer, timestamp);
     }
 
     private void updateError(String mapDir) {
@@ -496,9 +495,25 @@ public class FragmentMain extends FragmentBase implements
                         }
 
                         try {
-                            result = file1.createNewFile() &&
-                                    file2.createNewFile() &&
-                                    file3.createNewFile();
+                            result = file1.createNewFile();
+                            try {
+                                TimeUnit.SECONDS.sleep(1);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+
+                            if (result) {
+                                result = file2.createNewFile();
+                                try {
+                                    TimeUnit.SECONDS.sleep(1);
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                }
+
+                                if (result) {
+                                    result = file3.createNewFile();
+                                }
+                            }
 
                             if (result) {
                                 UtilsLog.d(LOG_ENABLED, TAG, "created files",
@@ -579,12 +594,11 @@ public class FragmentMain extends FragmentBase implements
             List<FileInfo> fileInfoList = data.getFileList();
 
             if (!fileInfoList.isEmpty()) {
+                mDateLocal = data.getTimestamp();
 
-                long timeStamp = data.getTimestamp();
-
-                mDateLocal = timeStamp == Consts.BAD_DATETIME ? null : new Date(timeStamp);
                 updateDateLocal(mDateLocal);
-                preferencesHelper.putDateLocal(mDateLocal.getTime());
+
+                preferencesHelper.putDateLocal(mDateLocal);
 
                 List<MapItem> mapItems = new ArrayList<>();
 

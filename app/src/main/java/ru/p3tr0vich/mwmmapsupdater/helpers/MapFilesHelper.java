@@ -25,6 +25,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
+import ru.p3tr0vich.mwmmapsupdater.Consts;
 import ru.p3tr0vich.mwmmapsupdater.models.FileInfo;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsFiles;
@@ -42,6 +43,13 @@ public class MapFilesHelper {
     private static final Comparator<String> MAP_SUB_DIR_COMPARATOR = new Comparator<String>() {
         @Override
         public int compare(String o1, String o2) {
+            return o2.compareTo(o1);
+        }
+    };
+
+    private static final Comparator<Long> LATEST_TIMESTAMP_COMPARATOR = new Comparator<Long>() {
+        @Override
+        public int compare(Long o1, Long o2) {
             return o2.compareTo(o1);
         }
     };
@@ -163,7 +171,7 @@ public class MapFilesHelper {
         return new FileInfo(mapName, new Date(lastModified));
     }
 
-    private static long mapDirNameToDate(@NonNull String mapDirName) {
+    private static long mapDirNameToTimestamp(@NonNull String mapDirName) {
         if (!TextUtils.isEmpty(mapDirName)) {
             try {
                 // mapSubDir == '171232' ==> '180101';
@@ -314,8 +322,12 @@ public class MapFilesHelper {
 
         boolean filesEquals = readFromJSONFile(context, savedMapFiles);
 
+        boolean mapSubDirEquals = false;
+
         if (filesEquals) {
-            filesEquals = mapFiles.getMapSubDir().equals(savedMapFiles.getMapSubDir()) &&
+            mapSubDirEquals = mapFiles.getMapSubDir().equals(savedMapFiles.getMapSubDir());
+
+            filesEquals = mapSubDirEquals &&
                     mapFiles.getFileList().equals(savedMapFiles.getFileList());
         }
 
@@ -324,8 +336,40 @@ public class MapFilesHelper {
         if (filesEquals) {
             mapFiles.setTimestamp(savedMapFiles.getTimestamp());
         } else {
-            mapFiles.setTimestamp(mapDirNameToDate(mapFiles.getMapSubDir()));
+            long timestamp = Consts.BAD_DATETIME;
+
+            if (mapSubDirEquals) {
+                timestamp = getLatestTimestamp(mapFiles.getFileList());
+            }
+
+            if (timestamp == Consts.BAD_DATETIME) {
+                timestamp = mapDirNameToTimestamp(mapFiles.getMapSubDir());
+            }
+
+            mapFiles.setTimestamp(timestamp);
+
             writeToJSONFile(context, mapFiles);
         }
+    }
+
+    public static long getLatestTimestamp(@NonNull List<FileInfo> fileInfoList) {
+        List<Long> dates = new ArrayList<>();
+
+        for (FileInfo fileInfo : fileInfoList) {
+            dates.add(fileInfo.getDate().getTime());
+        }
+
+        long timestamp = Consts.BAD_DATETIME;
+
+        if (!dates.isEmpty()) {
+            Collections.sort(dates, LATEST_TIMESTAMP_COMPARATOR);
+
+            timestamp = dates.get(0);
+        }
+
+        UtilsLog.d(LOG_ENABLED, TAG, "getLatestTimestamp",
+                "return " + (timestamp == Consts.BAD_DATETIME ? "BAD_DATETIME" : new Date(timestamp)));
+
+        return timestamp;
     }
 }

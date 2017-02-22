@@ -10,7 +10,6 @@ import android.nfc.FormatException;
 import android.os.Bundle;
 import android.os.RemoteException;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -61,14 +60,15 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
                 String parentMapsDir = providerPreferencesHelper.getParentMapsDir();
 
-                Date date = getMapsVersion(parentMapsDir);
+                long serverMapsTimestamp = getMapsVersion(parentMapsDir);
 
                 long currentTimeMillis = System.currentTimeMillis();
+
                 providerPreferencesHelper.putCheckServerDateTime(currentTimeMillis);
                 SyncProgressObserver.notifyCheckServerDateTime(getContext(), currentTimeMillis);
 
-                providerPreferencesHelper.putDateServer(date != null ? date.getTime() : Consts.BAD_DATETIME);
-                SyncProgressObserver.notifyDateChecked(getContext(), date);
+                providerPreferencesHelper.putDateServer(serverMapsTimestamp);
+                SyncProgressObserver.notifyDateChecked(getContext(), serverMapsTimestamp);
             } catch (Exception e) {
                 handleException(e, syncResult);
             }
@@ -91,8 +91,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         UtilsLog.e(TAG, "handleException", e);
     }
 
-    @Nullable
-    private Date getMapsVersion(@NonNull String parentMapsDir) throws IOException {
+    private long getMapsVersion(@NonNull String parentMapsDir) throws IOException {
         MapFiles mapFiles = MapFilesHelper.find(getContext(), parentMapsDir);
 
         List<FileInfo> fileInfoList = mapFiles.getFileList();
@@ -100,7 +99,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         if (fileInfoList.isEmpty()) {
             UtilsLog.e(TAG, "getMapsVersion", "fileInfoList  empty");
 
-            return null;
+            return Consts.BAD_DATETIME;
         }
 
         List<String> mapNames = new ArrayList<>();
@@ -109,10 +108,11 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
             mapNames.add(fileInfo.getMapName());
         }
 
-        Date date = MapFilesServerHelper.getVersion(mapNames);
+        long timestamp = MapFilesServerHelper.getVersion(mapNames);
 
-        UtilsLog.d(LOG_ENABLED, TAG, "getMapsVersion", "date == " + date);
+        UtilsLog.d(LOG_ENABLED, TAG, "getMapsVersion",
+                "return " + (timestamp == Consts.BAD_DATETIME ? "BAD_DATETIME" : new Date(timestamp)));
 
-        return date;
+        return timestamp;
     }
 }
