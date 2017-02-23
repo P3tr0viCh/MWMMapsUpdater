@@ -30,52 +30,52 @@ public abstract class SyncProgressObserver extends ContentObserverBase {
         String lastPath;
 
         switch (AppContentProvider.uriMatch(uri)) {
-            case AppContentProvider.UriMatchResult.SYNC_PROGRESS_CHECK_SERVER_DATETIME_ITEM:
+            case AppContentProvider.UriMatchResult.SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP_ITEM:
                 lastPath = uri.getLastPathSegment();
 
-                UtilsLog.d(LOG_ENABLED, TAG, "onChange", "uriMatch == SYNC_PROGRESS_CHECK_SERVER_DATETIME_ITEM, lastPath == " + lastPath);
+                UtilsLog.d(LOG_ENABLED, TAG, "onChange", "uriMatch == SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP_ITEM, lastPath == " + lastPath);
 
-                long checkServerDateTime;
+                long checkServerTimestamp;
                 if (TextUtils.isEmpty(lastPath)) {
-                    checkServerDateTime = Consts.BAD_DATETIME;
+                    checkServerTimestamp = Consts.BAD_DATETIME;
                 } else {
-                    checkServerDateTime = Long.parseLong(lastPath);
+                    checkServerTimestamp = Long.parseLong(lastPath);
                 }
 
-                onCheckServerDateTime(checkServerDateTime);
+                onCheckServerTimestamp(checkServerTimestamp);
 
                 break;
-            case AppContentProvider.UriMatchResult.SYNC_PROGRESS_DATE_CHECKED_ITEM:
+            case AppContentProvider.UriMatchResult.SYNC_PROGRESS_SERVER_MAPS_CHECKED_ITEM:
                 lastPath = uri.getLastPathSegment();
 
-                UtilsLog.d(LOG_ENABLED, TAG, "onChange", "uriMatch == SYNC_PROGRESS_DATE_CHECKED_ITEM, lastPath == " + lastPath);
+                UtilsLog.d(LOG_ENABLED, TAG, "onChange", "uriMatch == SYNC_PROGRESS_SERVER_MAPS_CHECKED_ITEM, lastPath == " + lastPath);
 
-                long dateChecked;
+                long serverMapsTimestamp;
                 if (TextUtils.isEmpty(lastPath)) {
-                    dateChecked = Consts.BAD_DATETIME;
+                    serverMapsTimestamp = Consts.BAD_DATETIME;
                 } else {
-                    dateChecked = Long.parseLong(lastPath);
+                    serverMapsTimestamp = Long.parseLong(lastPath);
                 }
 
-                onDateChecked(dateChecked);
+                onServerMapsChecked(serverMapsTimestamp);
 
                 break;
         }
     }
 
-    public abstract void onCheckServerDateTime(long timestamp);
+    public abstract void onCheckServerTimestamp(long timestamp);
 
-    public abstract void onDateChecked(long timestamp);
+    public abstract void onServerMapsChecked(long timestamp);
 
-    public static void notifyCheckServerDateTime(@NonNull Context context, long timestamp) {
-        Uri uri = Uri.withAppendedPath(AppContentProvider.UriList.SYNC_PROGRESS_CHECK_SERVER_DATETIME,
+    public static void notifyCheckServerTimestamp(@NonNull Context context, long timestamp) {
+        Uri uri = Uri.withAppendedPath(AppContentProvider.UriList.SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP,
                 String.valueOf(timestamp));
 
         notifyChange(context, uri);
     }
 
-    public static void notifyDateChecked(@NonNull Context context, long timestamp) {
-        Uri uri = Uri.withAppendedPath(AppContentProvider.UriList.SYNC_PROGRESS_DATE_CHECKED,
+    public static void notifyServerMapsChecked(@NonNull Context context, long timestamp) {
+        Uri uri = Uri.withAppendedPath(AppContentProvider.UriList.SYNC_PROGRESS_SERVER_MAPS_CHECKED,
                 String.valueOf(timestamp));
 
         notifyChange(context, uri);

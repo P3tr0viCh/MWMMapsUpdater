@@ -37,10 +37,10 @@ public class AppContentProvider extends ContentProvider {
 
     private interface UriPath {
         String SYNC_PROGRESS = "sync_progress";
-        String SYNC_PROGRESS_CHECK_SERVER_DATETIME = SYNC_PROGRESS + "/check_server_datetime";
-        String SYNC_PROGRESS_CHECK_SERVER_DATETIME_ITEM = SYNC_PROGRESS_CHECK_SERVER_DATETIME + "/*";
-        String SYNC_PROGRESS_DATE_CHECKED = SYNC_PROGRESS + "/date_checked";
-        String SYNC_PROGRESS_DATE_CHECKED_ITEM = SYNC_PROGRESS_DATE_CHECKED + "/*";
+        String SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP = SYNC_PROGRESS + "/check_server_timestamp";
+        String SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP_ITEM = SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP + "/*";
+        String SYNC_PROGRESS_SERVER_MAPS_CHECKED = SYNC_PROGRESS + "/server_maps_checked";
+        String SYNC_PROGRESS_SERVER_MAPS_CHECKED_ITEM = SYNC_PROGRESS_SERVER_MAPS_CHECKED + "/*";
 
         String PREFERENCES = "preferences";
         String PREFERENCES_ITEM = PREFERENCES + "/*";
@@ -48,15 +48,15 @@ public class AppContentProvider extends ContentProvider {
 
     public interface UriList {
         Uri SYNC_PROGRESS = BaseUri.getUri(UriPath.SYNC_PROGRESS);
-        Uri SYNC_PROGRESS_CHECK_SERVER_DATETIME = BaseUri.getUri(UriPath.SYNC_PROGRESS_CHECK_SERVER_DATETIME);
-        Uri SYNC_PROGRESS_DATE_CHECKED = BaseUri.getUri(UriPath.SYNC_PROGRESS_DATE_CHECKED);
+        Uri SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP = BaseUri.getUri(UriPath.SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP);
+        Uri SYNC_PROGRESS_SERVER_MAPS_CHECKED = BaseUri.getUri(UriPath.SYNC_PROGRESS_SERVER_MAPS_CHECKED);
 
         Uri PREFERENCES = BaseUri.getUri(UriPath.PREFERENCES);
     }
 
     public interface UriMatchResult {
-        int SYNC_PROGRESS_CHECK_SERVER_DATETIME_ITEM = 20;
-        int SYNC_PROGRESS_DATE_CHECKED_ITEM = 21;
+        int SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP_ITEM = 20;
+        int SYNC_PROGRESS_SERVER_MAPS_CHECKED_ITEM = 21;
 
         int PREFERENCES = 30;
         int PREFERENCES_ITEM = 31;
@@ -65,10 +65,10 @@ public class AppContentProvider extends ContentProvider {
     private static final UriMatcher sURIMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
     static {
-        sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.SYNC_PROGRESS_CHECK_SERVER_DATETIME_ITEM,
-                UriMatchResult.SYNC_PROGRESS_CHECK_SERVER_DATETIME_ITEM);
-        sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.SYNC_PROGRESS_DATE_CHECKED_ITEM,
-                UriMatchResult.SYNC_PROGRESS_DATE_CHECKED_ITEM);
+        sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP_ITEM,
+                UriMatchResult.SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP_ITEM);
+        sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.SYNC_PROGRESS_SERVER_MAPS_CHECKED_ITEM,
+                UriMatchResult.SYNC_PROGRESS_SERVER_MAPS_CHECKED_ITEM);
 
         sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.PREFERENCES, UriMatchResult.PREFERENCES);
         sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.PREFERENCES_ITEM, UriMatchResult.PREFERENCES_ITEM);

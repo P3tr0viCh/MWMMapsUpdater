@@ -67,6 +67,9 @@ public class MapFilesHelper {
     private static final String JSON_FILE_NAME = "name";
     private static final String JSON_FILE_TIMESTAMP = "timestamp";
 
+    private MapFilesHelper() {
+    }
+
     @NonNull
     private static File getFile(@NonNull Context context) {
         return new File(context.getFilesDir(), MAPS_INFO_FILE_NAME);

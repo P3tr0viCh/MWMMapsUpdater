@@ -8,6 +8,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
@@ -26,12 +27,16 @@ public class MapFilesServerHelper {
 
     private static final boolean DEBUG_DUMMY_FILE_INFO = true;
     private static final boolean DEBUG_FILE_INFO_WAIT_ENABLED = false;
+    private static final boolean DEBUG_RETURN_CURRENT_DATE = false;
 
     private static final String PROTOCOL = "http";
     private static final String HOST = "direct.mapswithme.com";
     private static final String PATH = "regular/daily";
 
     private static final int DEFAULT_CONNECT_TIMEOUT = (int) TimeUnit.SECONDS.toMillis(10);
+
+    private MapFilesServerHelper() {
+    }
 
     @Nullable
     private static URL getUrl(@NonNull String mapName) {
@@ -111,6 +116,17 @@ public class MapFilesServerHelper {
     }
 
     public static long getTimestamp(@NonNull List<String> mapNames) throws IOException {
+        if (BuildConfig.DEBUG && DEBUG_RETURN_CURRENT_DATE) {
+            Calendar calendar = Calendar.getInstance();
+
+            calendar.set(Calendar.HOUR_OF_DAY, 0);
+            calendar.set(Calendar.MINUTE, 0);
+            calendar.set(Calendar.SECOND, 0);
+            calendar.set(Calendar.MILLISECOND, 0);
+
+            return calendar.getTime().getTime();
+        }
+
         if (BuildConfig.DEBUG && DEBUG_DUMMY_FILE_INFO) {
             Random rand = new Random();
 

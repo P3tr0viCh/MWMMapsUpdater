@@ -78,18 +78,21 @@ public class ProviderPreferencesHelper {
         return query(mPreferencesHelper.keys.parentMapsDir).getAsString(mPreferencesHelper.keys.parentMapsDir);
     }
 
-    public void putCheckServerDateTime(long dateTime) throws RemoteException {
+    public void putCheckServerTimestamp(long dateTime) throws RemoteException {
         ContentValues contentValues = new ContentValues();
-        contentValues.put(mPreferencesHelper.keys.checkServerDateTime, dateTime);
+        contentValues.put(mPreferencesHelper.keys.checkServerTimestamp, dateTime);
 
-        update(contentValues, mPreferencesHelper.keys.checkServerDateTime);
+        update(contentValues, mPreferencesHelper.keys.checkServerTimestamp);
     }
 
+    public long getServerMapsTimestamp() throws RemoteException, FormatException {
+        return query(mPreferencesHelper.keys.serverMapsTimestamp).getAsLong(mPreferencesHelper.keys.serverMapsTimestamp);
+    }
 
-    public void putDateServer(long date) throws RemoteException {
+    public void putServerMapsTimestamp(long date) throws RemoteException {
         ContentValues contentValues = new ContentValues();
-        contentValues.put(mPreferencesHelper.keys.dateServer, date);
+        contentValues.put(mPreferencesHelper.keys.serverMapsTimestamp, date);
 
-        update(contentValues, mPreferencesHelper.keys.dateServer);
+        update(contentValues, mPreferencesHelper.keys.serverMapsTimestamp);
     }
 }

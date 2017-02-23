@@ -31,12 +31,9 @@ import org.json.JSONObject;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
@@ -50,6 +47,7 @@ import ru.p3tr0vich.mwmmapsupdater.models.FileInfo;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
 import ru.p3tr0vich.mwmmapsupdater.models.MapItem;
 import ru.p3tr0vich.mwmmapsupdater.observers.SyncProgressObserver;
+import ru.p3tr0vich.mwmmapsupdater.utils.UtilsDate;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsFiles;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
@@ -72,8 +70,6 @@ public class FragmentMain extends FragmentBase implements
     private static final String KEY_DATE_SERVER = "KEY_DATE_SERVER";
     private static final String KEY_CHECK_SERVER_DATE_TIME = "KEY_CHECK_SERVER_DATE_TIME";
 
-    private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy.MM.dd", Locale.getDefault());
-
     private ViewGroup mLayoutError;
     private ViewGroup mLayoutMain;
 
@@ -83,9 +79,9 @@ public class FragmentMain extends FragmentBase implements
     private ImageView mImgCheckServer;
     private Animation mAnimationCheckServer;
 
-    private long mDateLocal;
-    private long mDateServer;
-    private long mCheckServerDateTime;
+    private long mLocalMapsTimestamp;
+    private long mServerMapsTimestamp;
+    private long mCheckServerTimestamp;
 
     private MapItemRecyclerViewAdapter mMapItemRecyclerViewAdapter;
 
@@ -170,15 +166,15 @@ public class FragmentMain extends FragmentBase implements
         getLoaderManager().initLoader(MAP_FILES_LOADER_ID, null, this);
 
         if (savedInstanceState == null) {
-            mDateLocal = preferencesHelper.getDateLocal();
-            mDateServer = preferencesHelper.getDateServer();
+            mLocalMapsTimestamp = preferencesHelper.getLocalMapsTimestamp();
+            mServerMapsTimestamp = preferencesHelper.getServerMapsTimestamp();
 
-            mCheckServerDateTime = preferencesHelper.getCheckServerDateTime();
+            mCheckServerTimestamp = preferencesHelper.getCheckServerTimestamp();
         } else {
-            mDateLocal = savedInstanceState.getLong(KEY_DATE_LOCAL, Consts.BAD_DATETIME);
-            mDateServer = savedInstanceState.getLong(KEY_DATE_SERVER, Consts.BAD_DATETIME);
+            mLocalMapsTimestamp = savedInstanceState.getLong(KEY_DATE_LOCAL, Consts.BAD_DATETIME);
+            mServerMapsTimestamp = savedInstanceState.getLong(KEY_DATE_SERVER, Consts.BAD_DATETIME);
 
-            mCheckServerDateTime = savedInstanceState.getLong(KEY_CHECK_SERVER_DATE_TIME);
+            mCheckServerTimestamp = savedInstanceState.getLong(KEY_CHECK_SERVER_DATE_TIME);
         }
     }
 
@@ -190,11 +186,11 @@ public class FragmentMain extends FragmentBase implements
 
         mSyncMonitor = ContentResolver.addStatusChangeListener(ContentResolver.SYNC_OBSERVER_TYPE_ACTIVE, this);
 
-        if (((System.currentTimeMillis() - mCheckServerDateTime) > RECHECK_SERVER_MILLIS) ||
-                (mDateServer == Consts.BAD_DATETIME)) {
+        if (((System.currentTimeMillis() - mCheckServerTimestamp) > RECHECK_SERVER_MILLIS) ||
+                (mServerMapsTimestamp == Consts.BAD_DATETIME)) {
             ContentResolverHelper.requestSync(mAppAccount);
         } else {
-            updateDateServer(mDateServer);
+            updateDateServer(mServerMapsTimestamp);
         }
     }
 
@@ -211,9 +207,9 @@ public class FragmentMain extends FragmentBase implements
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
 
-        outState.putSerializable(KEY_DATE_LOCAL, mDateLocal);
-        outState.putSerializable(KEY_DATE_SERVER, mDateServer);
-        outState.putLong(KEY_CHECK_SERVER_DATE_TIME, mCheckServerDateTime);
+        outState.putSerializable(KEY_DATE_LOCAL, mLocalMapsTimestamp);
+        outState.putSerializable(KEY_DATE_SERVER, mServerMapsTimestamp);
+        outState.putLong(KEY_CHECK_SERVER_DATE_TIME, mCheckServerTimestamp);
     }
 
     @Override
@@ -255,14 +251,14 @@ public class FragmentMain extends FragmentBase implements
     private void initSyncProgressObserver() {
         mSyncProgressObserver = new SyncProgressObserver() {
             @Override
-            public void onCheckServerDateTime(long timestamp) {
-                mCheckServerDateTime = timestamp;
+            public void onCheckServerTimestamp(long timestamp) {
+                mCheckServerTimestamp = timestamp;
             }
 
             @Override
-            public void onDateChecked(long timestamp) {
-                mDateServer = timestamp;
-                updateDateServer(mDateServer);
+            public void onServerMapsChecked(long timestamp) {
+                mServerMapsTimestamp = timestamp;
+                updateDateServer(mServerMapsTimestamp);
             }
         };
         mSyncProgressObserver.register(getContext());
@@ -291,7 +287,7 @@ public class FragmentMain extends FragmentBase implements
     };
 
     private void updateTextDate(@NonNull TextView textView, long timestamp) {
-        textView.setText(timestamp != Consts.BAD_DATETIME ? DATE_FORMAT.format(new Date(timestamp)) : getString(R.string.text_error_date_server_null));
+        textView.setText(timestamp != Consts.BAD_DATETIME ? UtilsDate.format(timestamp) : getString(R.string.text_error_date_server_null));
     }
 
     private void updateDateLocal(long timestamp) {
@@ -594,11 +590,11 @@ public class FragmentMain extends FragmentBase implements
             List<FileInfo> fileInfoList = data.getFileList();
 
             if (!fileInfoList.isEmpty()) {
-                mDateLocal = data.getTimestamp();
+                mLocalMapsTimestamp = data.getTimestamp();
 
-                updateDateLocal(mDateLocal);
+                updateDateLocal(mLocalMapsTimestamp);
 
-                preferencesHelper.putDateLocal(mDateLocal);
+                preferencesHelper.putLocalMapsTimestamp(mLocalMapsTimestamp);
 
                 List<MapItem> mapItems = new ArrayList<>();
 
@@ -633,8 +629,8 @@ public class FragmentMain extends FragmentBase implements
 
         // data == null or file list empty
 
-        preferencesHelper.putDateLocal(Consts.BAD_DATETIME); // TODO: delete?
-        preferencesHelper.putDateServer(Consts.BAD_DATETIME);
+        preferencesHelper.putLocalMapsTimestamp(Consts.BAD_DATETIME); // TODO: delete?
+        preferencesHelper.putServerMapsTimestamp(Consts.BAD_DATETIME);
 
         mMapItemRecyclerViewAdapter.notifyItemRangeRemoved(0, mMapItemRecyclerViewAdapter.getItemCount());
 

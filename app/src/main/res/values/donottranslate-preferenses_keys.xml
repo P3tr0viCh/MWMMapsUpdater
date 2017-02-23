@@ -2,8 +2,9 @@
 <resources>
     <string name="pref_key_parent_maps_dir" translatable="false">parent_maps_dir</string>
 
-    <string name="pref_key_date_local" translatable="false">date_local</string>
+    <string name="pref_key_local_maps_timestamp" translatable="false">local_maps_timestamp</string>
 
-    <string name="pref_key_date_server" translatable="false">date_server</string>
-    <string name="pref_key_check_server_date_time" translatable="false">check_server_date_time</string>
+    <string name="pref_key_server_maps_timestamp" translatable="false">server_maps_timestamp</string>
+
+    <string name="pref_key_check_server_timestamp" translatable="false">check_server_timestamp</string>
 </resources>

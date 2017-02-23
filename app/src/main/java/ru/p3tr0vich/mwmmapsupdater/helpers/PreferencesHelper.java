@@ -52,7 +52,7 @@ public class PreferencesHelper {
     public static class Keys {
         @Retention(RetentionPolicy.SOURCE)
         @IntDef({UNKNOWN, PARENT_MAPS_DIR,
-                DATE_LOCAL, DATE_SERVER, CHECK_SERVER_DATE_TIME})
+                LOCAL_MAPS_TIMESTAMP, SERVER_MAPS_TIMESTAMP, CHECK_SERVER_TIMESTAMP})
         public @interface KeyAsInt {
         }
 
@@ -61,29 +61,30 @@ public class PreferencesHelper {
         public final String parentMapsDir;
         public static final int PARENT_MAPS_DIR = R.string.pref_key_parent_maps_dir;
 
-        public final String dateLocal;
-        public static final int DATE_LOCAL = R.string.pref_key_date_local;
+        public final String localMapsTimestamp;
+        public static final int LOCAL_MAPS_TIMESTAMP = R.string.pref_key_local_maps_timestamp;
 
-        public final String dateServer;
-        public static final int DATE_SERVER = R.string.pref_key_date_server;
-        public final String checkServerDateTime;
-        public static final int CHECK_SERVER_DATE_TIME = R.string.pref_key_check_server_date_time;
+        public final String serverMapsTimestamp;
+        public static final int SERVER_MAPS_TIMESTAMP = R.string.pref_key_server_maps_timestamp;
+
+        public final String checkServerTimestamp;
+        public static final int CHECK_SERVER_TIMESTAMP = R.string.pref_key_check_server_timestamp;
 
         private Keys(@NonNull Context context) {
             parentMapsDir = context.getString(PARENT_MAPS_DIR);
 
-            dateLocal = context.getString(DATE_LOCAL);
+            localMapsTimestamp = context.getString(LOCAL_MAPS_TIMESTAMP);
 
-            dateServer = context.getString(DATE_SERVER);
-            checkServerDateTime = context.getString(CHECK_SERVER_DATE_TIME);
+            serverMapsTimestamp = context.getString(SERVER_MAPS_TIMESTAMP);
+            checkServerTimestamp = context.getString(CHECK_SERVER_TIMESTAMP);
         }
 
         @KeyAsInt
         public int getAsInt(@Nullable String key) {
             if (parentMapsDir.equals(key)) return PARENT_MAPS_DIR;
-            if (dateLocal.equals(key)) return DATE_LOCAL;
-            if (dateServer.equals(key)) return DATE_SERVER;
-            if (checkServerDateTime.equals(key)) return CHECK_SERVER_DATE_TIME;
+            if (localMapsTimestamp.equals(key)) return LOCAL_MAPS_TIMESTAMP;
+            if (serverMapsTimestamp.equals(key)) return SERVER_MAPS_TIMESTAMP;
+            if (checkServerTimestamp.equals(key)) return CHECK_SERVER_TIMESTAMP;
             else return UNKNOWN;
         }
     }
@@ -109,9 +110,9 @@ public class PreferencesHelper {
     @PreferenceType
     public int getPreferenceType(@NonNull String key) {
         switch (keys.getAsInt(key)) {
-            case Keys.CHECK_SERVER_DATE_TIME:
-            case Keys.DATE_LOCAL:
-            case Keys.DATE_SERVER:
+            case Keys.CHECK_SERVER_TIMESTAMP:
+            case Keys.LOCAL_MAPS_TIMESTAMP:
+            case Keys.SERVER_MAPS_TIMESTAMP:
                 return PREFERENCE_TYPE_LONG;
             default:
             case Keys.UNKNOWN:
@@ -151,14 +152,14 @@ public class PreferencesHelper {
                 case Keys.PARENT_MAPS_DIR:
                     result.put(preference, getParentMapsDir());
                     break;
-                case Keys.DATE_LOCAL:
-                    result.put(preference, getDateLocal());
+                case Keys.LOCAL_MAPS_TIMESTAMP:
+                    result.put(preference, getLocalMapsTimestamp());
                     break;
-                case Keys.DATE_SERVER:
-                    result.put(preference, getDateServer());
+                case Keys.SERVER_MAPS_TIMESTAMP:
+                    result.put(preference, getServerMapsTimestamp());
                     break;
-                case Keys.CHECK_SERVER_DATE_TIME:
-                    result.put(preference, getCheckServerDateTime());
+                case Keys.CHECK_SERVER_TIMESTAMP:
+                    result.put(preference, getCheckServerTimestamp());
                     break;
                 case Keys.UNKNOWN:
                 default:
@@ -232,14 +233,14 @@ public class PreferencesHelper {
                 case Keys.PARENT_MAPS_DIR:
                     putParentMapsDir(preferences.getAsString(preference));
                     break;
-                case Keys.DATE_LOCAL:
-                    putDateLocal(preferences.getAsLong(preference));
+                case Keys.LOCAL_MAPS_TIMESTAMP:
+                    putLocalMapsTimestamp(preferences.getAsLong(preference));
                     break;
-                case Keys.DATE_SERVER:
-                    putDateServer(preferences.getAsLong(preference));
+                case Keys.SERVER_MAPS_TIMESTAMP:
+                    putServerMapsTimestamp(preferences.getAsLong(preference));
                     break;
-                case Keys.CHECK_SERVER_DATE_TIME:
-                    putCheckServerDateTime(preferences.getAsLong(preference));
+                case Keys.CHECK_SERVER_TIMESTAMP:
+                    putCheckServerTimestamp(preferences.getAsLong(preference));
                     break;
                 case Keys.UNKNOWN:
                 default:
@@ -278,36 +279,36 @@ public class PreferencesHelper {
                 .apply();
     }
 
-    public long getDateLocal() {
-        return mSharedPreferences.getLong(keys.dateLocal, Consts.BAD_DATETIME);
+    public long getLocalMapsTimestamp() {
+        return mSharedPreferences.getLong(keys.localMapsTimestamp, Consts.BAD_DATETIME);
     }
 
-    public void putDateLocal(long date) {
+    public void putLocalMapsTimestamp(long date) {
         mSharedPreferences
                 .edit()
-                .putLong(keys.dateLocal, date)
+                .putLong(keys.localMapsTimestamp, date)
                 .apply();
     }
 
-    public long getDateServer() {
-        return mSharedPreferences.getLong(keys.dateServer, Consts.BAD_DATETIME);
+    public long getServerMapsTimestamp() {
+        return mSharedPreferences.getLong(keys.serverMapsTimestamp, Consts.BAD_DATETIME);
     }
 
-    public void putDateServer(long date) {
+    public void putServerMapsTimestamp(long date) {
         mSharedPreferences
                 .edit()
-                .putLong(keys.dateServer, date)
+                .putLong(keys.serverMapsTimestamp, date)
                 .apply();
     }
 
-    public long getCheckServerDateTime() {
-        return mSharedPreferences.getLong(keys.checkServerDateTime, Consts.BAD_DATETIME);
+    public long getCheckServerTimestamp() {
+        return mSharedPreferences.getLong(keys.checkServerTimestamp, Consts.BAD_DATETIME);
     }
 
-    public void putCheckServerDateTime(long dateTime) {
+    public void putCheckServerTimestamp(long dateTime) {
         mSharedPreferences
                 .edit()
-                .putLong(keys.checkServerDateTime, dateTime)
+                .putLong(keys.checkServerTimestamp, dateTime)
                 .apply();
     }
 }

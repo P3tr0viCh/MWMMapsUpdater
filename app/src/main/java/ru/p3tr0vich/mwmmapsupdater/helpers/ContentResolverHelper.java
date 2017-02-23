@@ -29,6 +29,9 @@ public class ContentResolverHelper {
     public static final int POLL_FREQUENCY_12_HRS = 1;
     public static final long POLL_FREQUENCY_12_HRS_IN_SECS = TimeUnit.HOURS.toSeconds(12);
 
+    private ContentResolverHelper() {
+    }
+
     public static void requestSync(@NonNull AppAccount appAccount) {
         UtilsLog.d(LOG_ENABLED, TAG, "requestSync");
 
