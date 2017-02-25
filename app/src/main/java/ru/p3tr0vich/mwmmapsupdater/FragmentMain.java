@@ -47,6 +47,7 @@ import ru.p3tr0vich.mwmmapsupdater.models.FileInfo;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
 import ru.p3tr0vich.mwmmapsupdater.models.MapItem;
 import ru.p3tr0vich.mwmmapsupdater.observers.SyncProgressObserver;
+import ru.p3tr0vich.mwmmapsupdater.utils.Utils;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsDate;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsFiles;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
@@ -259,6 +260,11 @@ public class FragmentMain extends FragmentBase implements
             public void onServerMapsChecked(long timestamp) {
                 mServerMapsTimestamp = timestamp;
                 updateDateServer(mServerMapsTimestamp);
+            }
+
+            @Override
+            public void onErrorOccurred() {
+                Utils.toast(getContext(), R.string.message_error_sync_error_occurred);
             }
         };
         mSyncProgressObserver.register(getContext());

@@ -12,9 +12,14 @@
     <string name="text_notification_has_updates_ticker">Доступно обновление карт MAPS.ME</string>
     <string name="text_notification_has_updates_title">Обновление карт MAPS.ME</string>
     <string name="text_notification_has_updates_text">Версия: %s</string>
+    <string name="text_notification_download_progress_ticker">Загрузка карт MAPS.ME</string>
+    <string name="text_notification_download_progress_title">Загрузка карт MAPS.ME</string>
+    <string name="text_notification_download_end_ticker">Карты MAPS.ME загружены</string>
+    <string name="text_notification_download_end_title">Карты MAPS.ME загружены</string>
 
     <string name="message_check_server_active">Запрос выполняется…</string>
     <string name="message_error_no_internet">Отсутствует подключение к Интернет</string>
+    <string name="message_error_sync_error_occurred">Во время обновления произошла ошибка</string>
 
     <string name="btn_retry_find_maps">Повторить поиск</string>
 </resources>

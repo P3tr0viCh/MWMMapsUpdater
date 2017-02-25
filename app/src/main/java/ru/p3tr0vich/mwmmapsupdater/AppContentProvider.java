@@ -41,6 +41,7 @@ public class AppContentProvider extends ContentProvider {
         String SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP_ITEM = SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP + "/*";
         String SYNC_PROGRESS_SERVER_MAPS_CHECKED = SYNC_PROGRESS + "/server_maps_checked";
         String SYNC_PROGRESS_SERVER_MAPS_CHECKED_ITEM = SYNC_PROGRESS_SERVER_MAPS_CHECKED + "/*";
+        String SYNC_PROGRESS_ERROR_OCCURRED = SYNC_PROGRESS + "/error_occurred";
 
         String PREFERENCES = "preferences";
         String PREFERENCES_ITEM = PREFERENCES + "/*";
@@ -50,6 +51,7 @@ public class AppContentProvider extends ContentProvider {
         Uri SYNC_PROGRESS = BaseUri.getUri(UriPath.SYNC_PROGRESS);
         Uri SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP = BaseUri.getUri(UriPath.SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP);
         Uri SYNC_PROGRESS_SERVER_MAPS_CHECKED = BaseUri.getUri(UriPath.SYNC_PROGRESS_SERVER_MAPS_CHECKED);
+        Uri SYNC_PROGRESS_ERROR_OCCURRED = BaseUri.getUri(UriPath.SYNC_PROGRESS_ERROR_OCCURRED);
 
         Uri PREFERENCES = BaseUri.getUri(UriPath.PREFERENCES);
     }
@@ -57,6 +59,7 @@ public class AppContentProvider extends ContentProvider {
     public interface UriMatchResult {
         int SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP_ITEM = 20;
         int SYNC_PROGRESS_SERVER_MAPS_CHECKED_ITEM = 21;
+        int SYNC_PROGRESS_ERROR_OCCURRED = 22;
 
         int PREFERENCES = 30;
         int PREFERENCES_ITEM = 31;
@@ -69,6 +72,8 @@ public class AppContentProvider extends ContentProvider {
                 UriMatchResult.SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP_ITEM);
         sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.SYNC_PROGRESS_SERVER_MAPS_CHECKED_ITEM,
                 UriMatchResult.SYNC_PROGRESS_SERVER_MAPS_CHECKED_ITEM);
+        sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.SYNC_PROGRESS_ERROR_OCCURRED,
+                UriMatchResult.SYNC_PROGRESS_ERROR_OCCURRED);
 
         sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.PREFERENCES, UriMatchResult.PREFERENCES);
         sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.PREFERENCES_ITEM, UriMatchResult.PREFERENCES_ITEM);

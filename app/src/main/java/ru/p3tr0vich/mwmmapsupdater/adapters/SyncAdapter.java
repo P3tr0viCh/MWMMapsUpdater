@@ -9,11 +9,8 @@ import android.content.SyncResult;
 import android.nfc.FormatException;
 import android.os.Bundle;
 import android.os.RemoteException;
-import android.support.annotation.NonNull;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
@@ -22,7 +19,6 @@ import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesServerHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.NotificationHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ProviderPreferencesHelper;
-import ru.p3tr0vich.mwmmapsupdater.models.FileInfo;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
 import ru.p3tr0vich.mwmmapsupdater.observers.SyncProgressObserver;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
@@ -65,7 +61,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
                 final long localMapsTimestamp = mapFiles.getTimestamp();
 
-                final long serverMapsTimestamp = getServerMapsTimestamp(mapFiles);
+                final long serverMapsTimestamp = MapFilesServerHelper.getTimestamp(mapFiles);
 
                 final long currentTimeMillis = System.currentTimeMillis();
 
@@ -105,13 +101,42 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                     UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "has updates");
 
                     if (serverMapsTimestamp != savedServerMapsTimestamp) {
-                        UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "show notification");
+                        // TODO:
+                        // 0 -- do nothing, 1 -- show notification, 2 -- download only, 3 -- download and install
+                        int actionOnHasUpdates = 2;
 
-                        NotificationHelper.notifyHasUpdates(getContext(), serverMapsTimestamp);
+                        switch (actionOnHasUpdates) {
+                            case 0:
+                                UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "actionOnHasUpdates == do nothing");
+
+                                break;
+                            case 1:
+                                UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "actionOnHasUpdates == show notification");
+
+                                NotificationHelper.notifyHasUpdates(getContext(), serverMapsTimestamp);
+
+                                break;
+                            case 2:
+                                UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "actionOnHasUpdates == download");
+
+                                MapFilesServerHelper.downloadMaps(getContext(), mapFiles);
+
+                                NotificationHelper.notifyDownloadEnd(getContext(), serverMapsTimestamp);
+
+                                break;
+                            case 3:
+                                UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "actionOnHasUpdates == download and install");
+
+                                // TODO
+
+                                break;
+                        }
                     }
                 }
             } catch (Exception e) {
                 NotificationHelper.cancelHasUpdates(getContext());
+
+                SyncProgressObserver.notifyErrorOccurred(getContext());
 
                 handleException(e, syncResult);
             }
@@ -132,23 +157,5 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         else syncResult.databaseError = true;
 
         UtilsLog.e(TAG, "handleException", e);
-    }
-
-    private long getServerMapsTimestamp(@NonNull MapFiles mapFiles) throws IOException {
-        List<FileInfo> fileInfoList = mapFiles.getFileList();
-
-        if (fileInfoList.isEmpty()) {
-            UtilsLog.e(TAG, "getServerMapsTimestamp", "fileInfoList empty");
-
-            return Consts.BAD_DATETIME;
-        }
-
-        List<String> mapNames = new ArrayList<>();
-
-        for (FileInfo fileInfo : fileInfoList) {
-            mapNames.add(fileInfo.getMapName());
-        }
-
-        return MapFilesServerHelper.getTimestamp(mapNames);
     }
 }

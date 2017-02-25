@@ -60,12 +60,18 @@ public abstract class SyncProgressObserver extends ContentObserverBase {
                 onServerMapsChecked(serverMapsTimestamp);
 
                 break;
+            case AppContentProvider.UriMatchResult.SYNC_PROGRESS_ERROR_OCCURRED:
+                onErrorOccurred();
+
+                break;
         }
     }
 
     public abstract void onCheckServerTimestamp(long timestamp);
 
     public abstract void onServerMapsChecked(long timestamp);
+
+    public abstract void onErrorOccurred();
 
     public static void notifyCheckServerTimestamp(@NonNull Context context, long timestamp) {
         Uri uri = Uri.withAppendedPath(AppContentProvider.UriList.SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP,
@@ -79,5 +85,10 @@ public abstract class SyncProgressObserver extends ContentObserverBase {
                 String.valueOf(timestamp));
 
         notifyChange(context, uri);
+    }
+
+
+    public static void notifyErrorOccurred(@NonNull Context context) {
+        notifyChange(context, AppContentProvider.UriList.SYNC_PROGRESS_ERROR_OCCURRED);
     }
 }
