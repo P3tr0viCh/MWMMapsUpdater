@@ -31,8 +31,7 @@ public class NotificationHelper {
                 .setContentText(context.getString(R.string.text_notification_has_updates_text,
                         UtilsDate.format(timestamp)))
                 .setContentIntent(contentIntent)
-                // TODO: 25.02.2017 add to git
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setSmallIcon(R.mipmap.ic_notification)
                 .setLargeIcon(BitmapFactory.decodeResource(context.getResources(), R.mipmap.ic_launcher))
                 .setAutoCancel(true)
                 .setDefaults(Notification.DEFAULT_ALL);
@@ -56,8 +55,7 @@ public class NotificationHelper {
                 .setContentText(mapName)
                 .setProgress(100, progress, false)
                 .setContentIntent(contentIntent)
-                // TODO: 25.02.2017 add to git
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setSmallIcon(R.mipmap.ic_notification)
                 .setLargeIcon(BitmapFactory.decodeResource(context.getResources(), R.mipmap.ic_launcher))
                 .setAutoCancel(false)
                 .setOngoing(true)
@@ -79,8 +77,7 @@ public class NotificationHelper {
                         UtilsDate.format(timestamp)))
                 .setProgress(0, 0, false)
                 .setContentIntent(contentIntent)
-                // TODO: 25.02.2017 add to git
-                .setSmallIcon(R.mipmap.ic_launcher)
+                .setSmallIcon(R.mipmap.ic_notification)
                 .setLargeIcon(BitmapFactory.decodeResource(context.getResources(), R.mipmap.ic_launcher))
                 .setAutoCancel(true)
                 .setOngoing(false)
