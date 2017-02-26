@@ -12,8 +12,8 @@
     <string name="text_notification_has_updates_ticker">Доступно обновление карт MAPS.ME</string>
     <string name="text_notification_has_updates_title">Обновление карт MAPS.ME</string>
     <string name="text_notification_has_updates_text">Версия: %s</string>
-    <string name="text_notification_download_progress_ticker">Загрузка карт MAPS.ME</string>
-    <string name="text_notification_download_progress_title">Загрузка карт MAPS.ME</string>
+    <string name="text_notification_download_start_ticker">Загрузка карт MAPS.ME</string>
+    <string name="text_notification_download_start_title">Загрузка карт MAPS.ME</string>
     <string name="text_notification_download_end_ticker">Карты MAPS.ME загружены</string>
     <string name="text_notification_download_end_title">Карты MAPS.ME загружены</string>
 

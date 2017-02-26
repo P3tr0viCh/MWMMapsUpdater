@@ -9,6 +9,10 @@ import android.content.SyncResult;
 import android.nfc.FormatException;
 import android.os.Bundle;
 import android.os.RemoteException;
+import android.support.annotation.NonNull;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -18,9 +22,11 @@ import ru.p3tr0vich.mwmmapsupdater.Consts;
 import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesServerHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.NotificationHelper;
+import ru.p3tr0vich.mwmmapsupdater.helpers.PreferencesHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ProviderPreferencesHelper;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
 import ru.p3tr0vich.mwmmapsupdater.observers.SyncProgressObserver;
+import ru.p3tr0vich.mwmmapsupdater.utils.Utils;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
 public class SyncAdapter extends AbstractThreadedSyncAdapter {
@@ -40,9 +46,11 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
     public void onPerformSync(Account account, Bundle extras, String authority, ContentProviderClient provider, SyncResult syncResult) {
         UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "start");
 
-        ProviderPreferencesHelper providerPreferencesHelper = new ProviderPreferencesHelper(getContext(), provider);
+        final ProviderPreferencesHelper providerPreferencesHelper = new ProviderPreferencesHelper(getContext(), provider);
 
         try {
+            final NotificationHelper notificationHelper = new NotificationHelper(getContext());
+
             try {
                 if (BuildConfig.DEBUG && DEBUG_WAIT_ENABLED) {
                     for (int i = 0, waitSeconds = 5; i < waitSeconds; i++) {
@@ -101,30 +109,58 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                     UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "has updates");
 
                     if (serverMapsTimestamp != savedServerMapsTimestamp) {
-                        // TODO:
-                        // 0 -- do nothing, 1 -- show notification, 2 -- download only, 3 -- download and install
-                        int actionOnHasUpdates = 2;
+                        @PreferencesHelper.ActionOnHasUpdates
+                        int actionOnHasUpdates = providerPreferencesHelper.getActionOnHasUpdates();
 
                         switch (actionOnHasUpdates) {
-                            case 0:
+                            case PreferencesHelper.ACTION_ON_HAS_UPDATES_DO_NOTHING:
                                 UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "actionOnHasUpdates == do nothing");
 
                                 break;
-                            case 1:
+                            case PreferencesHelper.ACTION_ON_HAS_UPDATES_SHOW_NOTIFICATION:
                                 UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "actionOnHasUpdates == show notification");
 
-                                NotificationHelper.notifyHasUpdates(getContext(), serverMapsTimestamp);
+                                notificationHelper.notifyHasUpdates(serverMapsTimestamp);
 
                                 break;
-                            case 2:
+                            case PreferencesHelper.ACTION_ON_HAS_UPDATES_DOWNLOAD:
                                 UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "actionOnHasUpdates == download");
 
-                                MapFilesServerHelper.downloadMaps(getContext(), mapFiles);
+                                MapFilesServerHelper.downloadMaps(getContext(), mapFiles, new MapFilesServerHelper.OnDownloadProgress() {
 
-                                NotificationHelper.notifyDownloadEnd(getContext(), serverMapsTimestamp);
+                                    private final JSONObject namesAndDescriptions = Utils.getMapNamesAndDescriptions(getContext());
+
+                                    @Override
+                                    public void onStart() {
+                                        notificationHelper.notifyDownloadStart();
+                                    }
+
+                                    @Override
+                                    public void onMapStart(@NonNull String mapName) {
+                                        String name = mapName;
+
+                                        try {
+                                            name = namesAndDescriptions.getString(name);
+                                        } catch (JSONException e) {
+                                            UtilsLog.e(TAG, "onPerformSync > OnDownloadProgress > onMapStart", e);
+                                        }
+
+                                        notificationHelper.notifyDownloadMapStart(name);
+                                    }
+
+                                    @Override
+                                    public void onProgress(int progress) {
+                                        notificationHelper.notifyDownloadProgress(progress);
+                                    }
+
+                                    @Override
+                                    public void onEnd() {
+                                        notificationHelper.notifyDownloadEnd(serverMapsTimestamp);
+                                    }
+                                });
 
                                 break;
-                            case 3:
+                            case PreferencesHelper.ACTION_ON_HAS_UPDATES_INSTALL:
                                 UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "actionOnHasUpdates == download and install");
 
                                 // TODO
@@ -134,7 +170,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                     }
                 }
             } catch (Exception e) {
-                NotificationHelper.cancelHasUpdates(getContext());
+                notificationHelper.cancel();
 
                 SyncProgressObserver.notifyErrorOccurred(getContext());
 

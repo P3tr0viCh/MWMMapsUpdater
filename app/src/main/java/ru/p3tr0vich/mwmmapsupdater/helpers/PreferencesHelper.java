@@ -42,17 +42,43 @@ public class PreferencesHelper {
     private final SharedPreferences mSharedPreferences;
 
     @Retention(RetentionPolicy.SOURCE)
-    @IntDef({PREFERENCE_TYPE_STRING, PREFERENCE_TYPE_LONG})
+    @IntDef({PREFERENCE_TYPE_STRING, PREFERENCE_TYPE_LONG, PREFERENCE_TYPE_INT})
     public @interface PreferenceType {
     }
 
     public static final int PREFERENCE_TYPE_STRING = 0;
     public static final int PREFERENCE_TYPE_LONG = 1;
+    public static final int PREFERENCE_TYPE_INT = 2;
+
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({ACTION_ON_HAS_UPDATES_DO_NOTHING, ACTION_ON_HAS_UPDATES_SHOW_NOTIFICATION,
+            ACTION_ON_HAS_UPDATES_DOWNLOAD, ACTION_ON_HAS_UPDATES_INSTALL})
+    public @interface ActionOnHasUpdates {
+    }
+
+    public static final int ACTION_ON_HAS_UPDATES_DO_NOTHING = 0;
+    public static final int ACTION_ON_HAS_UPDATES_SHOW_NOTIFICATION = 1;
+    public static final int ACTION_ON_HAS_UPDATES_DOWNLOAD = 2;
+    public static final int ACTION_ON_HAS_UPDATES_INSTALL = 3;
+
+    @ActionOnHasUpdates
+    public static int getActionOnHasUpdatesFromInt(int actionOnHasUpdates) {
+        switch (actionOnHasUpdates) {
+            case ACTION_ON_HAS_UPDATES_SHOW_NOTIFICATION:
+            case ACTION_ON_HAS_UPDATES_DOWNLOAD:
+            case ACTION_ON_HAS_UPDATES_INSTALL:
+                return actionOnHasUpdates;
+            default:
+            case ACTION_ON_HAS_UPDATES_DO_NOTHING:
+                return ACTION_ON_HAS_UPDATES_DO_NOTHING;
+        }
+    }
 
     public static class Keys {
         @Retention(RetentionPolicy.SOURCE)
         @IntDef({UNKNOWN, PARENT_MAPS_DIR,
-                LOCAL_MAPS_TIMESTAMP, SERVER_MAPS_TIMESTAMP, CHECK_SERVER_TIMESTAMP})
+                LOCAL_MAPS_TIMESTAMP, SERVER_MAPS_TIMESTAMP, CHECK_SERVER_TIMESTAMP,
+                ACTION_ON_HAS_UPDATES})
         public @interface KeyAsInt {
         }
 
@@ -70,13 +96,15 @@ public class PreferencesHelper {
         public final String checkServerTimestamp;
         public static final int CHECK_SERVER_TIMESTAMP = R.string.pref_key_check_server_timestamp;
 
+        public final String actionOnHasUpdates;
+        public static final int ACTION_ON_HAS_UPDATES = R.string.pref_key_action_on_has_updates;
+
         private Keys(@NonNull Context context) {
             parentMapsDir = context.getString(PARENT_MAPS_DIR);
-
             localMapsTimestamp = context.getString(LOCAL_MAPS_TIMESTAMP);
-
             serverMapsTimestamp = context.getString(SERVER_MAPS_TIMESTAMP);
             checkServerTimestamp = context.getString(CHECK_SERVER_TIMESTAMP);
+            actionOnHasUpdates = context.getString(ACTION_ON_HAS_UPDATES);
         }
 
         @KeyAsInt
@@ -85,6 +113,7 @@ public class PreferencesHelper {
             if (localMapsTimestamp.equals(key)) return LOCAL_MAPS_TIMESTAMP;
             if (serverMapsTimestamp.equals(key)) return SERVER_MAPS_TIMESTAMP;
             if (checkServerTimestamp.equals(key)) return CHECK_SERVER_TIMESTAMP;
+            if (actionOnHasUpdates.equals(key)) return ACTION_ON_HAS_UPDATES;
             else return UNKNOWN;
         }
     }
@@ -119,6 +148,8 @@ public class PreferencesHelper {
                 UtilsLog.e(TAG, "getPreferenceType", "unhandled preference == " + key);
             case Keys.PARENT_MAPS_DIR:
                 return PREFERENCE_TYPE_STRING;
+            case Keys.ACTION_ON_HAS_UPDATES:
+                return PREFERENCE_TYPE_INT;
         }
     }
 
@@ -160,6 +191,9 @@ public class PreferencesHelper {
                     break;
                 case Keys.CHECK_SERVER_TIMESTAMP:
                     result.put(preference, getCheckServerTimestamp());
+                    break;
+                case Keys.ACTION_ON_HAS_UPDATES:
+                    result.put(preference, getActionOnHasUpdates());
                     break;
                 case Keys.UNKNOWN:
                 default:
@@ -242,6 +276,9 @@ public class PreferencesHelper {
                 case Keys.CHECK_SERVER_TIMESTAMP:
                     putCheckServerTimestamp(preferences.getAsLong(preference));
                     break;
+                case Keys.ACTION_ON_HAS_UPDATES:
+                    putActionOnHasUpdates(getActionOnHasUpdatesFromInt(preferences.getAsInteger(preference)));
+                    break;
                 case Keys.UNKNOWN:
                 default:
                     UtilsLog.e(TAG, "setPreferences", "unhandled preference == " + preference);
@@ -309,6 +346,18 @@ public class PreferencesHelper {
         mSharedPreferences
                 .edit()
                 .putLong(keys.checkServerTimestamp, dateTime)
+                .apply();
+    }
+
+    @ActionOnHasUpdates
+    private int getActionOnHasUpdates() {
+        return getActionOnHasUpdatesFromInt(mSharedPreferences.getInt(keys.actionOnHasUpdates, ACTION_ON_HAS_UPDATES_DOWNLOAD));
+    }
+
+    private void putActionOnHasUpdates(@ActionOnHasUpdates int actionOnHasUpdates) {
+        mSharedPreferences
+                .edit()
+                .putInt(keys.actionOnHasUpdates, actionOnHasUpdates)
                 .apply();
     }
 }

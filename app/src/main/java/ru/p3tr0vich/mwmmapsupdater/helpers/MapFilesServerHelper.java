@@ -42,6 +42,13 @@ public class MapFilesServerHelper {
     private MapFilesServerHelper() {
     }
 
+    public interface OnDownloadProgress {
+        void onStart();
+        void onMapStart(@NonNull String mapName);
+        void onProgress(int progress);
+        void onEnd();
+    }
+
     @Nullable
     private static URL getUrl(@NonNull String mapName) {
         try {
@@ -55,7 +62,6 @@ public class MapFilesServerHelper {
 
     @Nullable
     private static FileInfo getFileInfo(@NonNull String mapName) throws IOException {
-
         if (BuildConfig.DEBUG && DEBUG_FILE_INFO_WAIT_ENABLED) {
             try {
                 TimeUnit.SECONDS.sleep(1);
@@ -158,12 +164,12 @@ public class MapFilesServerHelper {
         return MapFilesHelper.getLatestTimestamp(fileInfoList);
     }
 
-    private static void download(Context context, @NonNull String mapName) {
+    private static void download(@NonNull String mapName, @NonNull OnDownloadProgress onDownloadProgress) {
         UtilsLog.d(LOG_ENABLED, TAG, "download", "start, mapName == " + mapName);
 
         long fileLength;
 
-        int read = 0;
+        int read;
 
         long total = 0;
 
@@ -197,19 +203,26 @@ public class MapFilesServerHelper {
                 UtilsLog.d(LOG_ENABLED, TAG, "download",
                         "read == " + read + ", total == " + total + ", progress == " + progress);
 
-                // TODO: 25.02.2017 map name
-                NotificationHelper.notifyDownloadProgress(context, mapName, progress);
+                onDownloadProgress.onProgress(progress);
             } while (total <= fileLength);
         }
 
         UtilsLog.d(LOG_ENABLED, TAG, "download", "end");
     }
 
-    public static void downloadMaps(Context context, @NonNull MapFiles mapFiles) {
+    public static void downloadMaps(Context context, @NonNull MapFiles mapFiles, @NonNull OnDownloadProgress onDownloadProgress) {
         UtilsLog.d(LOG_ENABLED, TAG, "downloadMaps", "map count == " + mapFiles.getFileList().size());
 
+        onDownloadProgress.onStart();
+
         for (FileInfo fileInfo : mapFiles.getFileList()) {
-            download(context, fileInfo.getMapName());
+            String mapName = fileInfo.getMapName();
+
+            onDownloadProgress.onMapStart(mapName);
+
+            download(mapName, onDownloadProgress);
         }
+
+        onDownloadProgress.onEnd();
     }
 }

@@ -56,6 +56,9 @@ public class ProviderPreferencesHelper {
                         case PreferencesHelper.PREFERENCE_TYPE_LONG:
                             result.put(key, cursor.getLong(1));
                             break;
+                        case PreferencesHelper.PREFERENCE_TYPE_INT:
+                            result.put(key, cursor.getInt(1));
+                            break;
                     }
                 } while (cursor.moveToNext());
             }
@@ -64,6 +67,19 @@ public class ProviderPreferencesHelper {
         }
 
         return result;
+    }
+
+    @NonNull
+    private String queryGetAsString(@NonNull String preference) throws RemoteException, FormatException {
+        return query(preference).getAsString(preference);
+    }
+
+    private long queryGetAsLong(@NonNull String preference) throws RemoteException, FormatException {
+        return query(preference).getAsLong(preference);
+    }
+
+    private int queryGetAsInt(@NonNull String preference) throws RemoteException, FormatException {
+        return query(preference).getAsInteger(preference);
     }
 
     private void update(@NonNull ContentValues contentValues,
@@ -75,7 +91,7 @@ public class ProviderPreferencesHelper {
     }
 
     public String getParentMapsDir() throws RemoteException, FormatException {
-        return query(mPreferencesHelper.keys.parentMapsDir).getAsString(mPreferencesHelper.keys.parentMapsDir);
+        return queryGetAsString(mPreferencesHelper.keys.parentMapsDir);
     }
 
     public void putCheckServerTimestamp(long dateTime) throws RemoteException {
@@ -86,7 +102,7 @@ public class ProviderPreferencesHelper {
     }
 
     public long getServerMapsTimestamp() throws RemoteException, FormatException {
-        return query(mPreferencesHelper.keys.serverMapsTimestamp).getAsLong(mPreferencesHelper.keys.serverMapsTimestamp);
+        return queryGetAsLong(mPreferencesHelper.keys.serverMapsTimestamp);
     }
 
     public void putServerMapsTimestamp(long date) throws RemoteException {
@@ -94,5 +110,10 @@ public class ProviderPreferencesHelper {
         contentValues.put(mPreferencesHelper.keys.serverMapsTimestamp, date);
 
         update(contentValues, mPreferencesHelper.keys.serverMapsTimestamp);
+    }
+
+    @PreferencesHelper.ActionOnHasUpdates
+    public int getActionOnHasUpdates() throws RemoteException, FormatException {
+        return PreferencesHelper.getActionOnHasUpdatesFromInt(queryGetAsInt(mPreferencesHelper.keys.actionOnHasUpdates));
     }
 }

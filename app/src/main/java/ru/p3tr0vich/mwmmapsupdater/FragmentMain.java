@@ -30,12 +30,10 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
@@ -542,48 +540,6 @@ public class FragmentMain extends FragmentBase implements
         return new MapFilesLoader(getContext(), preferencesHelper.getParentMapsDir());
     }
 
-    @Nullable
-    private JSONObject getMapNamesAndDescriptions() {
-        String json = "";
-
-        try {
-            String language = Locale.getDefault().getLanguage();
-
-            if (!"ru".equals(language)) {
-                language = "en";
-            }
-
-            InputStream inputStream = getResources().getAssets().open(getString(R.string.countries_strings_json, language));
-
-            int size = inputStream.available();
-
-            byte[] buffer = new byte[size];
-
-            //noinspection ResultOfMethodCallIgnored
-            inputStream.read(buffer);
-
-            inputStream.close();
-
-            json = new String(buffer, "UTF-8");
-        } catch (IOException e) {
-            e.printStackTrace();
-            UtilsLog.e(TAG, "getMapNamesAndDescriptions", e);
-        }
-
-        JSONObject jsonObject = null;
-
-        if (!json.isEmpty()) {
-            try {
-                jsonObject = new JSONObject(json);
-            } catch (JSONException e) {
-                e.printStackTrace();
-                UtilsLog.e(TAG, "getMapNamesAndDescriptions", e);
-            }
-        }
-
-        return jsonObject;
-    }
-
     @Override
     public void onLoadFinished(Loader<MapFiles> loader, MapFiles data) {
         String mapDir = null;
@@ -604,7 +560,7 @@ public class FragmentMain extends FragmentBase implements
 
                 List<MapItem> mapItems = new ArrayList<>();
 
-                JSONObject namesAndDescriptions = getMapNamesAndDescriptions();
+                JSONObject namesAndDescriptions = Utils.getMapNamesAndDescriptions(getContext());
 
                 for (FileInfo fileInfo : fileInfoList) {
                     String mapName = fileInfo.getMapName();
@@ -612,13 +568,11 @@ public class FragmentMain extends FragmentBase implements
                     String name = mapName;
                     String description = null;
 
-                    if (namesAndDescriptions != null) {
-                        try {
-                            name = namesAndDescriptions.getString(name);
-                            description = namesAndDescriptions.getString(mapName + " Description");
-                        } catch (JSONException e) {
-                            UtilsLog.e(TAG, "onLoadFinished", e);
-                        }
+                    try {
+                        name = namesAndDescriptions.getString(name);
+                        description = namesAndDescriptions.getString(mapName + " Description");
+                    } catch (JSONException e) {
+                        UtilsLog.e(TAG, "onLoadFinished", e);
                     }
 
                     mapItems.add(new MapItem(mapName, name, description));
