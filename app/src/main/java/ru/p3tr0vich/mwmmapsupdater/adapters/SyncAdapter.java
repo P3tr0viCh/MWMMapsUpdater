@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
 import ru.p3tr0vich.mwmmapsupdater.Consts;
+import ru.p3tr0vich.mwmmapsupdater.helpers.ConnectivityHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesServerHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.NotificationHelper;
@@ -37,6 +38,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
     private static final boolean DEBUG_WAIT_ENABLED = false;
     private static final boolean DEBUG_ALWAYS_HAS_UPDATES = true;
+    private static final boolean DEBUG_NOT_CHECK_SAVED_TIMESTAMP = true;
 
     public SyncAdapter(Context context) {
         super(context, true);
@@ -46,9 +48,31 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
     public void onPerformSync(Account account, Bundle extras, String authority, ContentProviderClient provider, SyncResult syncResult) {
         UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "start");
 
-        final ProviderPreferencesHelper providerPreferencesHelper = new ProviderPreferencesHelper(getContext(), provider);
-
         try {
+            @ConnectivityHelper.ConnectedState
+            final int connectedState = ConnectivityHelper.getConnectedState(getContext());
+
+            switch (connectedState) {
+                case ConnectivityHelper.CONNECTED_ROAMING:
+                    UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "connectedState == CONNECTED_ROAMING");
+                    break;
+                case ConnectivityHelper.CONNECTED_WIFI:
+                    UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "connectedState == CONNECTED_WIFI");
+                    break;
+                case ConnectivityHelper.CONNECTED:
+                    UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "connectedState == CONNECTED");
+                    break;
+                case ConnectivityHelper.DISCONNECTED:
+                    UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "connectedState == DISCONNECTED");
+                    break;
+            }
+
+            if (connectedState == ConnectivityHelper.CONNECTED_ROAMING || connectedState == ConnectivityHelper.DISCONNECTED) {
+                return;
+            }
+
+            final ProviderPreferencesHelper providerPreferencesHelper = new ProviderPreferencesHelper(getContext(), provider);
+
             final NotificationHelper notificationHelper = new NotificationHelper(getContext());
 
             try {
@@ -100,17 +124,23 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                     throw new IOException("serverMapsTimestamp == BAD_DATETIME");
                 }
 
+                //noinspection ConstantConditions
                 UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync",
-                        "serverMapsTimestamp > localMapsTimestamp == " + (serverMapsTimestamp > localMapsTimestamp));
+                        "serverMapsTimestamp > localMapsTimestamp == " + (serverMapsTimestamp > localMapsTimestamp) +
+                                ((BuildConfig.DEBUG && DEBUG_ALWAYS_HAS_UPDATES) ? " (ignored)" : ""));
+                //noinspection ConstantConditions
                 UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync",
-                        "serverMapsTimestamp != savedServerMapsTimestamp == " + (serverMapsTimestamp != savedServerMapsTimestamp));
+                        "serverMapsTimestamp != savedServerMapsTimestamp == " + (serverMapsTimestamp != savedServerMapsTimestamp) +
+                                ((BuildConfig.DEBUG && DEBUG_NOT_CHECK_SAVED_TIMESTAMP) ? " (ignored)" : ""));
 
                 if ((serverMapsTimestamp > localMapsTimestamp) || (BuildConfig.DEBUG && DEBUG_ALWAYS_HAS_UPDATES)) {
                     UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "has updates");
 
-                    if (serverMapsTimestamp != savedServerMapsTimestamp) {
+                    if ((serverMapsTimestamp != savedServerMapsTimestamp) || (BuildConfig.DEBUG && DEBUG_NOT_CHECK_SAVED_TIMESTAMP)) {
                         @PreferencesHelper.ActionOnHasUpdates
                         int actionOnHasUpdates = providerPreferencesHelper.getActionOnHasUpdates();
+
+                        boolean downloadOnlyOnWifi = providerPreferencesHelper.isDownloadOnlyOnWifi();
 
                         switch (actionOnHasUpdates) {
                             case PreferencesHelper.ACTION_ON_HAS_UPDATES_DO_NOTHING:
@@ -126,44 +156,14 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                             case PreferencesHelper.ACTION_ON_HAS_UPDATES_DOWNLOAD:
                                 UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "actionOnHasUpdates == download");
 
-                                MapFilesServerHelper.downloadMaps(getContext(), mapFiles, new MapFilesServerHelper.OnDownloadProgress() {
-
-                                    private final JSONObject namesAndDescriptions = Utils.getMapNamesAndDescriptions(getContext());
-
-                                    @Override
-                                    public void onStart() {
-                                        notificationHelper.notifyDownloadStart();
-                                    }
-
-                                    @Override
-                                    public void onMapStart(@NonNull String mapName) {
-                                        String name = mapName;
-
-                                        try {
-                                            name = namesAndDescriptions.getString(name);
-                                        } catch (JSONException e) {
-                                            UtilsLog.e(TAG, "onPerformSync > OnDownloadProgress > onMapStart", e);
-                                        }
-
-                                        notificationHelper.notifyDownloadMapStart(name);
-                                    }
-
-                                    @Override
-                                    public void onProgress(int progress) {
-                                        notificationHelper.notifyDownloadProgress(progress);
-                                    }
-
-                                    @Override
-                                    public void onEnd() {
-                                        notificationHelper.notifyDownloadEnd(serverMapsTimestamp);
-                                    }
-                                });
+                                download(getContext(), connectedState, downloadOnlyOnWifi, mapFiles,
+                                        notificationHelper, serverMapsTimestamp);
 
                                 break;
                             case PreferencesHelper.ACTION_ON_HAS_UPDATES_INSTALL:
                                 UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "actionOnHasUpdates == download and install");
 
-                                // TODO
+                                // TODO: 28.02.2017 download and copy to mwm dir
 
                                 break;
                         }
@@ -186,12 +186,58 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         }
     }
 
-    private void handleException(Exception e, SyncResult syncResult) {
+    private static void handleException(Exception e, SyncResult syncResult) {
         if (e instanceof RemoteException) syncResult.databaseError = true;
         else if (e instanceof IOException) syncResult.stats.numIoExceptions++;
         else if (e instanceof FormatException) syncResult.stats.numParseExceptions++;
         else syncResult.databaseError = true;
 
         UtilsLog.e(TAG, "handleException", e);
+    }
+
+    private static boolean download(@NonNull final Context context, int connectedState, boolean downloadOnlyOnWifi,
+                                    @NonNull MapFiles mapFiles, @NonNull final NotificationHelper notificationHelper,
+                                    final long serverMapsTimestamp) throws IOException {
+        if (!BuildConfig.DEBUG) {
+            if (downloadOnlyOnWifi && connectedState != ConnectivityHelper.CONNECTED_WIFI) {
+                // TODO: 28.02.2017 write pref "check on wifi enabled" and start sync after wifi connected
+                return false;
+            }
+        }
+
+        MapFilesServerHelper.downloadMaps(mapFiles, new MapFilesServerHelper.OnDownloadProgress() {
+
+            private final JSONObject namesAndDescriptions = Utils.getMapNamesAndDescriptions(context);
+
+            @Override
+            public void onStart() {
+                notificationHelper.notifyDownloadStart();
+            }
+
+            @Override
+            public void onMapStart(@NonNull String mapName) {
+                String name = mapName;
+
+                try {
+                    name = namesAndDescriptions.getString(name);
+                } catch (JSONException e) {
+                    UtilsLog.e(TAG, "download > OnDownloadProgress > onMapStart", e);
+                }
+
+                notificationHelper.notifyDownloadMapStart(name);
+            }
+
+            @Override
+            public void onProgress(int progress) {
+                notificationHelper.notifyDownloadProgress(progress);
+            }
+
+            @Override
+            public void onEnd() {
+                notificationHelper.notifyDownloadEnd(serverMapsTimestamp);
+            }
+        });
+
+        return true;
     }
 }

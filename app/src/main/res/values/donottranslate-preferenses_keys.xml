@@ -5,4 +5,5 @@
     <string name="pref_key_server_maps_timestamp" translatable="false">server_maps_timestamp</string>
     <string name="pref_key_check_server_timestamp" translatable="false">check_server_timestamp</string>
     <string name="pref_key_action_on_has_updates" translatable="false">action_on_has_updates</string>
+    <string name="pref_key_download_only_on_wifi" translatable="false">download_only_on_wifi</string>
 </resources>

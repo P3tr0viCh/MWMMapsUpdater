@@ -22,7 +22,6 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
 import ru.p3tr0vich.mwmmapsupdater.Consts;
@@ -54,11 +53,6 @@ public class MapFilesHelper {
         }
     };
 
-    private static final Pattern MAP_SUB_DIR_NAME_PATTERN = Pattern.compile("\\d{6}", Pattern.CASE_INSENSITIVE);
-
-    private static final Pattern MAP_FILE_NAME_PATTERN = Pattern.compile("^(.+)(\\.mwm)$", Pattern.CASE_INSENSITIVE);
-    private static final int MAP_FILE_NAME_PATTERN_GROUP_INDEX = 1;
-
     private static final String MAPS_INFO_FILE_NAME = "maps_info.json";
 
     private static final String JSON_TIMESTAMP = "timestamp";
@@ -71,15 +65,15 @@ public class MapFilesHelper {
     }
 
     @NonNull
-    private static File getFile(@NonNull Context context) {
+    private static File getMapsInfoFile(@NonNull Context context) {
         return new File(context.getFilesDir(), MAPS_INFO_FILE_NAME);
     }
 
     private static boolean readFromJSONFile(@NonNull Context context, @NonNull MapFiles mapFiles) {
-        File file = getFile(context);
+        File file = getMapsInfoFile(context);
 
         try {
-            UtilsFiles.checkExists(file);
+            UtilsFiles.checkFileExists(file);
 
             JSONObject json = UtilsFiles.readJSON(file);
 
@@ -133,7 +127,7 @@ public class MapFilesHelper {
 
             UtilsLog.d(LOG_ENABLED, TAG, "writeToJSONFile", "json == " + json.toString());
 
-            File file = getFile(context);
+            File file = getMapsInfoFile(context);
 
             UtilsFiles.writeJSON(file, json);
 
@@ -147,7 +141,7 @@ public class MapFilesHelper {
     }
 
     public static void deleteJSONFile(@NonNull Context context) {
-        File file = getFile(context);
+        File file = getMapsInfoFile(context);
         //noinspection ResultOfMethodCallIgnored
         file.delete();
     }
@@ -161,7 +155,7 @@ public class MapFilesHelper {
 
             lastModified = -946771200000L + (Math.abs(rand.nextLong()) % (70L * 365 * 24 * 60 * 60 * 1000));
         } else {
-            File file = new File(mapSubDir, mapName + ".mwm");
+            File file = new File(mapSubDir, mapName + Consts.MAP_FILE_NAME_EXT);
 
             lastModified = file.lastModified();
         }
@@ -247,7 +241,7 @@ public class MapFilesHelper {
             if (file.isDirectory()) {
                 fileName = file.getName();
 
-                matcher = MAP_SUB_DIR_NAME_PATTERN.matcher(fileName);
+                matcher = Consts.MAP_SUB_DIR_NAME_PATTERN.matcher(fileName);
 
                 if (matcher.find()) {
                     subDirNamesList.add(fileName);
@@ -280,11 +274,10 @@ public class MapFilesHelper {
             if (file.isFile()) {
                 fileName = file.getName();
 
-                matcher = MAP_FILE_NAME_PATTERN.matcher(fileName);
+                matcher = Consts.MAP_FILE_NAME_PATTERN.matcher(fileName);
 
                 if (matcher.find()) {
-                    // fileName без расширения
-                    String mapName = matcher.group(MAP_FILE_NAME_PATTERN_GROUP_INDEX);
+                    String mapName = matcher.group(Consts.MAP_FILE_NAME_PATTERN_GROUP_INDEX);
 
                     mapNameList.add(mapName);
                 }

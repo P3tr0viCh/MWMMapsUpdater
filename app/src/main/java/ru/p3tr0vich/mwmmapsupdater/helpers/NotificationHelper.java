@@ -81,14 +81,15 @@ public class NotificationHelper {
     }
 
     public void notifyDownloadEnd(long timestamp) {
-        cancel(); // <-- исправление бага Андроид (выравнивание title и text по центру)
+        cancel(); // <-- исправление бага Андроид (вертиепльное выравнивание title и text по центру)
 
         mBuilder.setTicker(mContext.getText(R.string.text_notification_download_end_ticker));
         mBuilder.setContentTitle(mContext.getText(R.string.text_notification_download_end_title));
         mBuilder.setContentText(mContext.getString(R.string.text_notification_has_updates_text,
                 UtilsDate.format(timestamp)));
         mBuilder.setProgress(0, 0, false);
-        mBuilder.setSmallIcon(android.R.drawable.stat_sys_download_done);
+        mBuilder.setSmallIcon(R.mipmap.ic_notification);
+        mBuilder.setLargeIcon(BitmapFactory.decodeResource(mContext.getResources(), R.mipmap.ic_launcher));
         mBuilder.setAutoCancel(true);
         mBuilder.setOngoing(false);
 

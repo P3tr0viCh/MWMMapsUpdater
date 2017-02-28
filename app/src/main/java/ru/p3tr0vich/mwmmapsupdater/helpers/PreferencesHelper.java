@@ -42,13 +42,14 @@ public class PreferencesHelper {
     private final SharedPreferences mSharedPreferences;
 
     @Retention(RetentionPolicy.SOURCE)
-    @IntDef({PREFERENCE_TYPE_STRING, PREFERENCE_TYPE_LONG, PREFERENCE_TYPE_INT})
+    @IntDef({PREFERENCE_TYPE_STRING, PREFERENCE_TYPE_LONG, PREFERENCE_TYPE_INT, PREFERENCE_TYPE_BOOL})
     public @interface PreferenceType {
     }
 
     public static final int PREFERENCE_TYPE_STRING = 0;
     public static final int PREFERENCE_TYPE_LONG = 1;
     public static final int PREFERENCE_TYPE_INT = 2;
+    public static final int PREFERENCE_TYPE_BOOL = 3;
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({ACTION_ON_HAS_UPDATES_DO_NOTHING, ACTION_ON_HAS_UPDATES_SHOW_NOTIFICATION,
@@ -78,7 +79,7 @@ public class PreferencesHelper {
         @Retention(RetentionPolicy.SOURCE)
         @IntDef({UNKNOWN, PARENT_MAPS_DIR,
                 LOCAL_MAPS_TIMESTAMP, SERVER_MAPS_TIMESTAMP, CHECK_SERVER_TIMESTAMP,
-                ACTION_ON_HAS_UPDATES})
+                ACTION_ON_HAS_UPDATES, DOWNLOAD_ONLY_ON_WIFI})
         public @interface KeyAsInt {
         }
 
@@ -99,12 +100,16 @@ public class PreferencesHelper {
         public final String actionOnHasUpdates;
         public static final int ACTION_ON_HAS_UPDATES = R.string.pref_key_action_on_has_updates;
 
+        public final String downloadOnlyOnWifi;
+        public static final int DOWNLOAD_ONLY_ON_WIFI = R.string.pref_key_download_only_on_wifi;
+
         private Keys(@NonNull Context context) {
             parentMapsDir = context.getString(PARENT_MAPS_DIR);
             localMapsTimestamp = context.getString(LOCAL_MAPS_TIMESTAMP);
             serverMapsTimestamp = context.getString(SERVER_MAPS_TIMESTAMP);
             checkServerTimestamp = context.getString(CHECK_SERVER_TIMESTAMP);
             actionOnHasUpdates = context.getString(ACTION_ON_HAS_UPDATES);
+            downloadOnlyOnWifi = context.getString(DOWNLOAD_ONLY_ON_WIFI);
         }
 
         @KeyAsInt
@@ -114,7 +119,8 @@ public class PreferencesHelper {
             if (serverMapsTimestamp.equals(key)) return SERVER_MAPS_TIMESTAMP;
             if (checkServerTimestamp.equals(key)) return CHECK_SERVER_TIMESTAMP;
             if (actionOnHasUpdates.equals(key)) return ACTION_ON_HAS_UPDATES;
-            else return UNKNOWN;
+            if (downloadOnlyOnWifi.equals(key)) return DOWNLOAD_ONLY_ON_WIFI;
+            return UNKNOWN;
         }
     }
 
@@ -143,13 +149,20 @@ public class PreferencesHelper {
             case Keys.LOCAL_MAPS_TIMESTAMP:
             case Keys.SERVER_MAPS_TIMESTAMP:
                 return PREFERENCE_TYPE_LONG;
+
+            case Keys.PARENT_MAPS_DIR:
+                return PREFERENCE_TYPE_STRING;
+
+            case Keys.ACTION_ON_HAS_UPDATES:
+                return PREFERENCE_TYPE_INT;
+
+            case Keys.DOWNLOAD_ONLY_ON_WIFI:
+                return PREFERENCE_TYPE_BOOL;
+
             default:
             case Keys.UNKNOWN:
                 UtilsLog.e(TAG, "getPreferenceType", "unhandled preference == " + key);
-            case Keys.PARENT_MAPS_DIR:
                 return PREFERENCE_TYPE_STRING;
-            case Keys.ACTION_ON_HAS_UPDATES:
-                return PREFERENCE_TYPE_INT;
         }
     }
 
@@ -194,6 +207,9 @@ public class PreferencesHelper {
                     break;
                 case Keys.ACTION_ON_HAS_UPDATES:
                     result.put(preference, getActionOnHasUpdates());
+                    break;
+                case Keys.DOWNLOAD_ONLY_ON_WIFI:
+                    result.put(preference, isDownloadOnlyOnWifi());
                     break;
                 case Keys.UNKNOWN:
                 default:
@@ -358,6 +374,17 @@ public class PreferencesHelper {
         mSharedPreferences
                 .edit()
                 .putInt(keys.actionOnHasUpdates, actionOnHasUpdates)
+                .apply();
+    }
+
+    public boolean isDownloadOnlyOnWifi() {
+        return mSharedPreferences.getBoolean(keys.downloadOnlyOnWifi, true);
+    }
+
+    private void putDownloadOnlyOnWifi(boolean downloadOnlyOnWifi) {
+        mSharedPreferences
+                .edit()
+                .putBoolean(keys.downloadOnlyOnWifi, downloadOnlyOnWifi)
                 .apply();
     }
 }

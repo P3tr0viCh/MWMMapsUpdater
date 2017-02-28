@@ -59,6 +59,9 @@ public class ProviderPreferencesHelper {
                         case PreferencesHelper.PREFERENCE_TYPE_INT:
                             result.put(key, cursor.getInt(1));
                             break;
+                        case PreferencesHelper.PREFERENCE_TYPE_BOOL:
+                            result.put(key, cursor.getInt(1) != 0);
+                            break;
                     }
                 } while (cursor.moveToNext());
             }
@@ -80,6 +83,10 @@ public class ProviderPreferencesHelper {
 
     private int queryGetAsInt(@NonNull String preference) throws RemoteException, FormatException {
         return query(preference).getAsInteger(preference);
+    }
+
+    private boolean queryGetAsBool(@NonNull String preference) throws RemoteException, FormatException {
+        return query(preference).getAsBoolean(preference);
     }
 
     private void update(@NonNull ContentValues contentValues,
@@ -115,5 +122,9 @@ public class ProviderPreferencesHelper {
     @PreferencesHelper.ActionOnHasUpdates
     public int getActionOnHasUpdates() throws RemoteException, FormatException {
         return PreferencesHelper.getActionOnHasUpdatesFromInt(queryGetAsInt(mPreferencesHelper.keys.actionOnHasUpdates));
+    }
+
+    public boolean isDownloadOnlyOnWifi() throws RemoteException, FormatException {
+        return queryGetAsBool(mPreferencesHelper.keys.downloadOnlyOnWifi);
     }
 }

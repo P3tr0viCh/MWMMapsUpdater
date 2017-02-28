@@ -29,18 +29,19 @@ public class ConnectivityHelper {
 
     @ConnectedState
     public static int getConnectedState(@NonNull Context context) {
-        ConnectivityManager connectivityManager =
-                SystemServicesHelper.getConnectivityManager(context);
+        ConnectivityManager connectivityManager = SystemServicesHelper.getConnectivityManager(context);
 
         if (connectivityManager != null) {
             NetworkInfo activeNetworkInfo = connectivityManager.getActiveNetworkInfo();
 
             if (activeNetworkInfo != null && activeNetworkInfo.isConnected()) {
-                if (activeNetworkInfo.isRoaming())
+                if (activeNetworkInfo.isRoaming()) {
                     return CONNECTED_ROAMING;
+                }
 
-                if (activeNetworkInfo.getType() == ConnectivityManager.TYPE_WIFI)
+                if (activeNetworkInfo.getType() == ConnectivityManager.TYPE_WIFI) {
                     return CONNECTED_WIFI;
+                }
 
                 return CONNECTED;
             }

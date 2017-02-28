@@ -89,10 +89,18 @@ public class UtilsFiles {
         }
     }
 
-    public static void checkExists(@NonNull File file) throws FileNotFoundException {
+    public static void checkFileExists(@NonNull File file) throws FileNotFoundException {
         if (!file.exists() || !file.isFile()) {
-            throw new FileNotFoundException(TAG + " -- checkExists: " + file.toString() +
+            throw new FileNotFoundException(TAG + " -- checkFileExists: " + file.toString() +
                     " not exists or not is a file");
+        }
+    }
+
+    public static void makeDir(@NonNull File dir) throws IOException {
+        if (dir.exists() && dir.isDirectory()) return;
+
+        if (!dir.mkdirs()) {
+            throw new IOException(TAG + " -- makeDir: can not create dir " + dir.toString());
         }
     }
 }

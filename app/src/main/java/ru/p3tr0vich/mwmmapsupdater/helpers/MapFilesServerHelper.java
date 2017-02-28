@@ -1,10 +1,15 @@
 package ru.p3tr0vich.mwmmapsupdater.helpers;
 
-import android.content.Context;
+import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -19,6 +24,7 @@ import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
 import ru.p3tr0vich.mwmmapsupdater.Consts;
 import ru.p3tr0vich.mwmmapsupdater.models.FileInfo;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
+import ru.p3tr0vich.mwmmapsupdater.utils.UtilsFiles;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
 public class MapFilesServerHelper {
@@ -27,8 +33,8 @@ public class MapFilesServerHelper {
 
     private static final boolean LOG_ENABLED = true;
 
-    private static final boolean DEBUG_DUMMY_FILE_INFO = true;
-    private static final boolean DEBUG_DUMMY_DOWNLOAD = true;
+    private static final boolean DEBUG_DUMMY_FILE_INFO = false;
+    private static final boolean DEBUG_DUMMY_DOWNLOAD = false;
     private static final boolean DEBUG_RETURN_CURRENT_DATE = false;
     private static final boolean DEBUG_DOWNLOAD_WAIT_ENABLED = true;
     private static final boolean DEBUG_FILE_INFO_WAIT_ENABLED = false;
@@ -37,6 +43,8 @@ public class MapFilesServerHelper {
     private static final String HOST = "direct.mapswithme.com";
     private static final String PATH = "regular/daily";
 
+    private static final String DOWNLOAD_SUB_DIR_NAME = "MAPS.ME maps";
+
     private static final int DEFAULT_CONNECT_TIMEOUT = (int) TimeUnit.SECONDS.toMillis(10);
 
     private MapFilesServerHelper() {
@@ -44,20 +52,40 @@ public class MapFilesServerHelper {
 
     public interface OnDownloadProgress {
         void onStart();
+
         void onMapStart(@NonNull String mapName);
+
         void onProgress(int progress);
+
         void onEnd();
     }
 
-    @Nullable
+    @NonNull
     private static URL getUrl(@NonNull String mapName) {
+        URL url = null;
+
+        String path = PATH + '/' + mapName + Consts.MAP_FILE_NAME_EXT;
+
         try {
-            return new URL(PROTOCOL, HOST, PATH + '/' + mapName + ".mwm");
+            url = new URL(PROTOCOL, HOST, path);
         } catch (MalformedURLException e) {
             e.printStackTrace();
+            UtilsLog.e(TAG, "getUrl", "url == null from protocol == " + PROTOCOL + ", host == " + HOST + ", path == " + path);
         }
 
-        return null;
+        assert url != null;
+
+        return url;
+    }
+
+    @NonNull
+    private static File getDownloadDir() {
+        return new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), DOWNLOAD_SUB_DIR_NAME);
+    }
+
+    @NonNull
+    private static File getDownloadFile(@NonNull String mapName) {
+        return new File(getDownloadDir(), mapName + Consts.MAP_FILE_NAME_EXT);
     }
 
     @Nullable
@@ -78,11 +106,6 @@ public class MapFilesServerHelper {
             lastModified = -946771200000L + (Math.abs(rand.nextLong()) % (70L * 365 * 24 * 60 * 60 * 1000));
         } else {
             URL url = getUrl(mapName);
-
-            if (url == null) {
-                UtilsLog.e(TAG, "getFileInfo", "url == null");
-                return null;
-            }
 
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 
@@ -164,7 +187,7 @@ public class MapFilesServerHelper {
         return MapFilesHelper.getLatestTimestamp(fileInfoList);
     }
 
-    private static void download(@NonNull String mapName, @NonNull OnDownloadProgress onDownloadProgress) {
+    private static void download(@NonNull String mapName, @NonNull OnDownloadProgress onDownloadProgress) throws IOException {
         UtilsLog.d(LOG_ENABLED, TAG, "download", "start, mapName == " + mapName);
 
         long fileLength;
@@ -175,43 +198,96 @@ public class MapFilesServerHelper {
 
         int progress;
 
-        if (BuildConfig.DEBUG && DEBUG_DUMMY_DOWNLOAD) {
-            Random random = new Random();
+        try {
+            if (BuildConfig.DEBUG && DEBUG_DUMMY_DOWNLOAD) {
+                Random random = new Random();
 
-            fileLength = 1024 + random.nextInt(1024);
+                fileLength = 1024 + random.nextInt(1024);
+
+                UtilsLog.d(LOG_ENABLED, TAG, "download", "fileLength == " + fileLength);
+
+                do {
+                    read = 10 + random.nextInt(90);
+
+                    total += read;
+
+                    progress = (int) (total * 100 / fileLength);
+
+                    if (progress > 100) progress = 100;
+
+                    if (BuildConfig.DEBUG && DEBUG_DOWNLOAD_WAIT_ENABLED) {
+                        try {
+                            TimeUnit.MILLISECONDS.sleep(200);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    UtilsLog.d(LOG_ENABLED, TAG, "download",
+                            "read == " + read + ", total == " + total + ", progress == " + progress);
+
+                    onDownloadProgress.onProgress(progress);
+                } while (total <= fileLength);
+
+                return;
+            }
+
+            URL url = getUrl(mapName);
+
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+            connection.setConnectTimeout(DEFAULT_CONNECT_TIMEOUT);
+
+            connection.connect();
+
+            fileLength = connection.getContentLength();
 
             UtilsLog.d(LOG_ENABLED, TAG, "download", "fileLength == " + fileLength);
 
+            InputStream input = new BufferedInputStream(connection.getInputStream());
 
-            do {
-                read = 10 + random.nextInt(90);
+            File file = getDownloadFile(mapName);
 
+            File fileDownloadInProgress = new File(file.getAbsolutePath() + ".downloading");
+
+            OutputStream output = new FileOutputStream(fileDownloadInProgress);
+
+            byte data[] = new byte[1024];
+
+            while ((read = input.read(data)) != -1) {
                 total += read;
 
                 progress = (int) (total * 100 / fileLength);
 
-                if (progress > 100) progress = 100;
-
-                if (BuildConfig.DEBUG && DEBUG_DOWNLOAD_WAIT_ENABLED) {
-                    try {
-                        TimeUnit.MILLISECONDS.sleep(200);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-                UtilsLog.d(LOG_ENABLED, TAG, "download",
-                        "read == " + read + ", total == " + total + ", progress == " + progress);
-
                 onDownloadProgress.onProgress(progress);
-            } while (total <= fileLength);
-        }
 
-        UtilsLog.d(LOG_ENABLED, TAG, "download", "end");
+                output.write(data, 0, read);
+            }
+
+            output.flush();
+
+            output.close();
+
+            input.close();
+
+            connection.disconnect();
+
+            if (!fileDownloadInProgress.renameTo(file)) {
+                throw new IOException("Unable to rename file '" + fileDownloadInProgress.getAbsolutePath() + "'");
+            }
+        } finally {
+            UtilsLog.d(LOG_ENABLED, TAG, "download", "end");
+        }
     }
 
-    public static void downloadMaps(Context context, @NonNull MapFiles mapFiles, @NonNull OnDownloadProgress onDownloadProgress) {
+    public static void downloadMaps(@NonNull MapFiles mapFiles, @NonNull OnDownloadProgress onDownloadProgress) throws IOException {
         UtilsLog.d(LOG_ENABLED, TAG, "downloadMaps", "map count == " + mapFiles.getFileList().size());
+
+        File downloadDir = getDownloadDir();
+
+        UtilsFiles.makeDir(downloadDir);
+
+        UtilsFiles.recursiveDeleteInDirectory(downloadDir);
 
         onDownloadProgress.onStart();
 
