@@ -34,7 +34,6 @@ public class NotificationHelper {
 
         mBuilder = new Notification.Builder(context);
         mBuilder.setContentIntent(contentIntent);
-        mBuilder.setDefaults(Notification.DEFAULT_ALL);
     }
 
     private void notify(@NonNull Notification notification) {
@@ -53,6 +52,7 @@ public class NotificationHelper {
         mBuilder.setSmallIcon(R.mipmap.ic_notification);
         mBuilder.setLargeIcon(BitmapFactory.decodeResource(mContext.getResources(), R.mipmap.ic_launcher));
         mBuilder.setAutoCancel(true);
+        mBuilder.setDefaults(Notification.DEFAULT_ALL);
 
         notify(mBuilder.build());
     }
@@ -92,6 +92,7 @@ public class NotificationHelper {
         mBuilder.setLargeIcon(BitmapFactory.decodeResource(mContext.getResources(), R.mipmap.ic_launcher));
         mBuilder.setAutoCancel(true);
         mBuilder.setOngoing(false);
+        mBuilder.setDefaults(Notification.DEFAULT_ALL);
 
         notify(mBuilder.build());
     }

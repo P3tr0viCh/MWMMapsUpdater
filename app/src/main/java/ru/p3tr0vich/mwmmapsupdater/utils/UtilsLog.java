@@ -14,6 +14,9 @@ import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
 public class UtilsLog {
     private static final String LOG_TAG = "XXX";
 
+    // TODO: отключить после разработки
+    private static final boolean IGNORE_DEBUG = true;
+
     public static final DateFormat DATETIME_FORMAT = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault());
 
     private static String formatMsg(@Nullable String tag, @NonNull String msg, @Nullable String extMsg) {
@@ -29,7 +32,7 @@ public class UtilsLog {
     }
 
     public static void d(boolean show, @Nullable String tag, @NonNull String msg, @Nullable String extMsg) {
-        if (BuildConfig.DEBUG && show) {
+        if ((BuildConfig.DEBUG || IGNORE_DEBUG) && show) {
             Log.d(LOG_TAG, formatMsg(tag, msg, extMsg));
         }
     }
@@ -55,6 +58,6 @@ public class UtilsLog {
     }
 
     public static void e(@Nullable String tag, @NonNull String msg, @NonNull Exception e) {
-        Log.e(LOG_TAG, formatMsg(tag, msg, "exception == " + e.toString()));
+        e(tag, msg, "exception == " + e.toString());
     }
 }

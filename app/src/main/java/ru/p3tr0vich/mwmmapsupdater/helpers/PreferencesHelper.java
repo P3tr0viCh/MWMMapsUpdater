@@ -295,6 +295,9 @@ public class PreferencesHelper {
                 case Keys.ACTION_ON_HAS_UPDATES:
                     putActionOnHasUpdates(getActionOnHasUpdatesFromInt(preferences.getAsInteger(preference)));
                     break;
+                case Keys.DOWNLOAD_ONLY_ON_WIFI:
+                    putDownloadOnlyOnWifi(preferences.getAsBoolean(preference));
+                    break;
                 case Keys.UNKNOWN:
                 default:
                     UtilsLog.e(TAG, "setPreferences", "unhandled preference == " + preference);
