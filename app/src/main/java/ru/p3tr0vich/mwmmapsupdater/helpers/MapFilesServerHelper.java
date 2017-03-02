@@ -18,7 +18,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
-import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
@@ -34,7 +33,7 @@ public class MapFilesServerHelper {
 
     private static final boolean LOG_ENABLED = true;
 
-    private static final boolean DEBUG_DUMMY_FILE_INFO = false;
+    private static final boolean DEBUG_DUMMY_FILE_INFO = true;
     private static final boolean DEBUG_DUMMY_DOWNLOAD = false;
     private static final boolean DEBUG_DUMMY_DOWNLOAD_LOG_PROGRESS = false;
     private static final boolean DEBUG_RETURN_CURRENT_DATE = false;
@@ -117,13 +116,6 @@ public class MapFilesServerHelper {
             connection.connect();
 
             lastModified = connection.getLastModified();
-
-            // TODO: 02.03.2017 convert timezone
-            Calendar calendar = Calendar.getInstance();
-            calendar.setTimeInMillis(lastModified);
-            calendar.setTimeZone(TimeZone.getTimeZone("GMT"));
-
-            lastModified = calendar.getTimeInMillis();
 
             connection.disconnect();
         }

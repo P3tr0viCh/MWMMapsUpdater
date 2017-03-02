@@ -35,7 +35,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
     private static final String TAG = "SyncAdapter";
 
-    private static final boolean LOG_ENABLED = true;
+    private static final boolean LOG_ENABLED = false;
 
     private static final boolean DEBUG_WAIT_ENABLED = false;
     private static final boolean DEBUG_ALWAYS_HAS_UPDATES = true;
@@ -47,27 +47,28 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
     private MapFiles mMapFiles;
 
-    private int mConnectedState;
-
     public SyncAdapter(Context context) {
         super(context, true);
     }
 
-    private void updateConnectedState() throws IOException {
-        mConnectedState = ConnectivityHelper.getConnectedState(getContext());
+    @ConnectivityHelper.ConnectedState
+    private int updateConnectedState() throws IOException {
+        int connectedState = ConnectivityHelper.getConnectedState(getContext());
 
         UtilsLog.d(LOG_ENABLED, TAG, "updateConnectedState", "mConnectedState == " +
-                (mConnectedState == ConnectivityHelper.CONNECTED ? "CONNECTED" :
-                        mConnectedState == ConnectivityHelper.CONNECTED_WIFI ? "CONNECTED_WIFI" :
-                                mConnectedState == ConnectivityHelper.CONNECTED_ROAMING ? "CONNECTED_ROAMING" :
-                                        mConnectedState == ConnectivityHelper.DISCONNECTED ? "DISCONNECTED" : "?"));
+                (connectedState == ConnectivityHelper.CONNECTED ? "CONNECTED" :
+                        connectedState == ConnectivityHelper.CONNECTED_WIFI ? "CONNECTED_WIFI" :
+                                connectedState == ConnectivityHelper.CONNECTED_ROAMING ? "CONNECTED_ROAMING" :
+                                        connectedState == ConnectivityHelper.DISCONNECTED ? "DISCONNECTED" : "?"));
 
-        if (mConnectedState == ConnectivityHelper.CONNECTED_ROAMING) {
-            throw new IOException("mConnectedState == CONNECTED_ROAMING");
+        if (connectedState == ConnectivityHelper.CONNECTED_ROAMING) {
+            throw new IOException("connectedState == CONNECTED_ROAMING");
         } else {
-            if (mConnectedState == ConnectivityHelper.DISCONNECTED)
-                throw new IOException("mConnectedState == DISCONNECTED");
+            if (connectedState == ConnectivityHelper.DISCONNECTED)
+                throw new IOException("connectedState == DISCONNECTED");
         }
+
+        return connectedState;
     }
 
     @Override
@@ -97,7 +98,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         init(provider);
 
         try {
-            updateConnectedState();
+            int connectedState = updateConnectedState();
 
             if (BuildConfig.DEBUG && DEBUG_WAIT_ENABLED) {
                 for (int i = 0, waitSeconds = 5; i < waitSeconds; i++) {
@@ -150,7 +151,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
             if (manualStart) {
                 manualSync(manualRequest);
             } else {
-                autoSync(localMapsTimestamp, serverMapsTimestamp, savedServerMapsTimestamp);
+                autoSync(localMapsTimestamp, serverMapsTimestamp, savedServerMapsTimestamp, connectedState);
             }
 
             serverChecked();
@@ -203,7 +204,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         }
     }
 
-    private void autoSync(long localMapsTimestamp, long serverMapsTimestamp, long savedServerMapsTimestamp) throws RemoteException, FormatException, IOException {
+    private void autoSync(long localMapsTimestamp, long serverMapsTimestamp, long savedServerMapsTimestamp,
+                          @ConnectivityHelper.ConnectedState int connectedState) throws RemoteException, FormatException, IOException {
         if ((serverMapsTimestamp > localMapsTimestamp) || (BuildConfig.DEBUG && DEBUG_ALWAYS_HAS_UPDATES)) {
             UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "has updates");
 
@@ -224,6 +226,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                         break;
                     case PreferencesHelper.ACTION_ON_HAS_UPDATES_DOWNLOAD:
                         UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == download");
+
+                        checkWifi(connectedState);
 
                         download();
 
@@ -249,11 +253,11 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         SyncProgressObserver.notifyCheckServerTimestamp(getContext(), currentTimeMillis);
     }
 
-    private void checkWifi() throws RemoteException, FormatException, IOException {
+    private void checkWifi(@ConnectivityHelper.ConnectedState int connectedState) throws RemoteException, FormatException, IOException {
         if (!BuildConfig.DEBUG) {
             boolean downloadOnlyOnWifi = mProviderPreferencesHelper.isDownloadOnlyOnWifi();
 
-            if (downloadOnlyOnWifi && mConnectedState != ConnectivityHelper.CONNECTED_WIFI) {
+            if (downloadOnlyOnWifi && connectedState != ConnectivityHelper.CONNECTED_WIFI) {
                 // TODO: 28.02.2017 write pref "check on wifi enabled" and start sync after wifi connected
 
                 throw new IOException("wifi required");
@@ -261,10 +265,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         }
     }
 
-    private boolean download() throws IOException, RemoteException, FormatException {
-
-        checkWifi();
-
+    private void download() throws IOException, RemoteException, FormatException {
         MapFilesServerHelper.downloadMaps(mMapFiles, new MapFilesServerHelper.OnDownloadProgress() {
 
             private final JSONObject namesAndDescriptions = Utils.getMapNamesAndDescriptions(getContext());
@@ -297,7 +298,5 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                 mNotificationHelper.notifyDownloadEnd(mMapFiles.getServerTimestamp());
             }
         });
-
-        return true;
-    }
+   }
 }

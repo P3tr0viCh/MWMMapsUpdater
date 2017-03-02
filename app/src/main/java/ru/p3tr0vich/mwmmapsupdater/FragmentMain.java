@@ -224,6 +224,7 @@ public class FragmentMain extends FragmentBase implements
         mSyncProgressObserver = new SyncProgressObserver() {
             @Override
             public void onCheckServerTimestamp(long timestamp) {
+                getLoaderManager().getLoader(MAP_FILES_LOADER_ID).onContentChanged();
             }
 
             @Override
@@ -527,6 +528,31 @@ public class FragmentMain extends FragmentBase implements
         return new MapFilesLoader(getContext(), preferencesHelper.getParentMapsDir());
     }
 
+    @NonNull
+    private List<MapItem> getMapItems(@NonNull List<FileInfo> fileInfoList) {
+        List<MapItem> mapItems = new ArrayList<>();
+
+        JSONObject namesAndDescriptions = Utils.getMapNamesAndDescriptions(getContext());
+
+        for (FileInfo fileInfo : fileInfoList) {
+            String mapName = fileInfo.getMapName();
+
+            String name = mapName;
+            String description = null;
+
+            try {
+                name = namesAndDescriptions.getString(name);
+                description = namesAndDescriptions.getString(mapName + " Description");
+            } catch (JSONException e) {
+                UtilsLog.e(TAG, "getMapItems", e);
+            }
+
+            mapItems.add(new MapItem(mapName, name, description));
+        }
+
+        return mapItems;
+    }
+
     @Override
     public void onLoadFinished(Loader<MapFiles> loader, MapFiles data) {
         String mapDir = null;
@@ -539,25 +565,7 @@ public class FragmentMain extends FragmentBase implements
             List<FileInfo> fileInfoList = data.getFileList();
 
             if (!fileInfoList.isEmpty()) {
-                List<MapItem> mapItems = new ArrayList<>();
-
-                JSONObject namesAndDescriptions = Utils.getMapNamesAndDescriptions(getContext());
-
-                for (FileInfo fileInfo : fileInfoList) {
-                    String mapName = fileInfo.getMapName();
-
-                    String name = mapName;
-                    String description = null;
-
-                    try {
-                        name = namesAndDescriptions.getString(name);
-                        description = namesAndDescriptions.getString(mapName + " Description");
-                    } catch (JSONException e) {
-                        UtilsLog.e(TAG, "onLoadFinished", e);
-                    }
-
-                    mapItems.add(new MapItem(mapName, name, description));
-                }
+                List<MapItem> mapItems = getMapItems(fileInfoList);
 
                 mMapItemRecyclerViewAdapter.swapItems(mapItems);
 

@@ -25,6 +25,9 @@ public class MapFiles {
 
         mLastCheckTimestamp = Consts.BAD_DATETIME;
 
+        mMapDir = "";
+        mMapSubDir = "";
+
         mFileList = new ArrayList<>();
     }
 

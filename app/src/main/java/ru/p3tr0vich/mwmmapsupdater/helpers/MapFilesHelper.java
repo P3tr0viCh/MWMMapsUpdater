@@ -34,7 +34,7 @@ public class MapFilesHelper {
 
     private static final String TAG = "MapFilesHelper";
 
-    private static final boolean LOG_ENABLED = false;
+    private static final boolean LOG_ENABLED = true;
 
     private static final boolean DEBUG_DUMMY_FILE_INFO = false;
     private static final boolean DEBUG_WAIT_ENABLED = false;
