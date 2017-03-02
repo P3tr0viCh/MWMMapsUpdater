@@ -2,8 +2,12 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
       xmlns:tools="http://schemas.android.com/tools">
     <item
-        android:id="@+id/action_main_update"
-        android:title="update"
+        android:id="@+id/action_main_update_local_files"
+        android:title="update local files"
+        tools:ignore="HardcodedText"/>
+    <item
+        android:id="@+id/action_main_start_sync_as_debug"
+        android:title="start sync as debug"
         tools:ignore="HardcodedText"/>
     <item
         android:id="@+id/action_main_create_mwm_dir"

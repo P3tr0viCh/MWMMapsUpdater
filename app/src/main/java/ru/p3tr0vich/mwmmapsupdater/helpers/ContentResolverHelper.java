@@ -24,15 +24,26 @@ public class ContentResolverHelper {
     }
 
     public static final int POLL_FREQUENCY_6_HRS = 0;
-    public static final long POLL_FREQUENCY_6_HRS_IN_SECS = TimeUnit.HOURS.toSeconds(6);
+    private static final long POLL_FREQUENCY_6_HRS_IN_SECS = TimeUnit.HOURS.toSeconds(6);
 
     public static final int POLL_FREQUENCY_12_HRS = 1;
-    public static final long POLL_FREQUENCY_12_HRS_IN_SECS = TimeUnit.HOURS.toSeconds(12);
+    private static final long POLL_FREQUENCY_12_HRS_IN_SECS = TimeUnit.HOURS.toSeconds(12);
+
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({REQUEST_SYNC_CHECK, REQUEST_SYNC_DOWNLOAD, REQUEST_SYNC_INSTALL})
+    public @interface RequestSync {
+    }
+
+    public static final int REQUEST_SYNC_CHECK = 0;
+    public static final int REQUEST_SYNC_DOWNLOAD = 1;
+    public static final int REQUEST_SYNC_INSTALL = 2;
+
+    public static final String SYNC_EXTRAS_REQUEST = "request";
 
     private ContentResolverHelper() {
     }
 
-    public static void requestSync(@NonNull AppAccount appAccount) {
+    private static void requestSync(@NonNull AppAccount appAccount, @NonNull Bundle extras) {
         UtilsLog.d(LOG_ENABLED, TAG, "requestSync");
 
         if (isSyncActive(appAccount)) {
@@ -40,12 +51,22 @@ public class ContentResolverHelper {
             return;
         }
 
+        ContentResolver.requestSync(appAccount.getAccount(), appAccount.getAuthority(), extras);
+    }
+
+    public static void requestSync(@NonNull AppAccount appAccount, @RequestSync int request) {
         Bundle extras = new Bundle();
 
         extras.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
         extras.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
 
-        ContentResolver.requestSync(appAccount.getAccount(), appAccount.getAuthority(), extras);
+        extras.putInt(SYNC_EXTRAS_REQUEST, request);
+
+        requestSync(appAccount, extras);
+    }
+
+    public static void requestSyncDebug(@NonNull AppAccount appAccount) {
+        requestSync(appAccount, Bundle.EMPTY);
     }
 
     public static boolean isSyncActive(@NonNull AppAccount appAccount) {

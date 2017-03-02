@@ -18,7 +18,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Map;
 
-import ru.p3tr0vich.mwmmapsupdater.Consts;
 import ru.p3tr0vich.mwmmapsupdater.R;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
@@ -197,13 +196,13 @@ public class PreferencesHelper {
                     result.put(preference, getParentMapsDir());
                     break;
                 case Keys.LOCAL_MAPS_TIMESTAMP:
-                    result.put(preference, getLocalMapsTimestamp());
+//                    result.put(preference, getLocalMapsTimestamp());
                     break;
                 case Keys.SERVER_MAPS_TIMESTAMP:
-                    result.put(preference, getServerMapsTimestamp());
+//                    result.put(preference, getServerMapsTimestamp());
                     break;
                 case Keys.CHECK_SERVER_TIMESTAMP:
-                    result.put(preference, getCheckServerTimestamp());
+//                    result.put(preference, getCheckServerTimestamp());
                     break;
                 case Keys.ACTION_ON_HAS_UPDATES:
                     result.put(preference, getActionOnHasUpdates());
@@ -284,13 +283,13 @@ public class PreferencesHelper {
                     putParentMapsDir(preferences.getAsString(preference));
                     break;
                 case Keys.LOCAL_MAPS_TIMESTAMP:
-                    putLocalMapsTimestamp(preferences.getAsLong(preference));
+//                    putLocalMapsTimestamp(preferences.getAsLong(preference));
                     break;
                 case Keys.SERVER_MAPS_TIMESTAMP:
-                    putServerMapsTimestamp(preferences.getAsLong(preference));
+//                    putServerMapsTimestamp(preferences.getAsLong(preference));
                     break;
                 case Keys.CHECK_SERVER_TIMESTAMP:
-                    putCheckServerTimestamp(preferences.getAsLong(preference));
+//                    putCheckServerTimestamp(preferences.getAsLong(preference));
                     break;
                 case Keys.ACTION_ON_HAS_UPDATES:
                     putActionOnHasUpdates(getActionOnHasUpdatesFromInt(preferences.getAsInteger(preference)));
@@ -334,39 +333,39 @@ public class PreferencesHelper {
                 .putString(keys.parentMapsDir, dirName)
                 .apply();
     }
-
-    public long getLocalMapsTimestamp() {
-        return mSharedPreferences.getLong(keys.localMapsTimestamp, Consts.BAD_DATETIME);
-    }
-
-    public void putLocalMapsTimestamp(long date) {
-        mSharedPreferences
-                .edit()
-                .putLong(keys.localMapsTimestamp, date)
-                .apply();
-    }
-
-    public long getServerMapsTimestamp() {
-        return mSharedPreferences.getLong(keys.serverMapsTimestamp, Consts.BAD_DATETIME);
-    }
-
-    public void putServerMapsTimestamp(long date) {
-        mSharedPreferences
-                .edit()
-                .putLong(keys.serverMapsTimestamp, date)
-                .apply();
-    }
-
-    public long getCheckServerTimestamp() {
-        return mSharedPreferences.getLong(keys.checkServerTimestamp, Consts.BAD_DATETIME);
-    }
-
-    public void putCheckServerTimestamp(long dateTime) {
-        mSharedPreferences
-                .edit()
-                .putLong(keys.checkServerTimestamp, dateTime)
-                .apply();
-    }
+//
+//    public long getLocalMapsTimestamp() {
+//        return mSharedPreferences.getLong(keys.localMapsTimestamp, Consts.BAD_DATETIME);
+//    }
+//
+//    public void putLocalMapsTimestamp(long date) {
+//        mSharedPreferences
+//                .edit()
+//                .putLong(keys.localMapsTimestamp, date)
+//                .apply();
+//    }
+//
+//    public long getServerMapsTimestamp() {
+//        return mSharedPreferences.getLong(keys.serverMapsTimestamp, Consts.BAD_DATETIME);
+//    }
+//
+//    public void putServerMapsTimestamp(long date) {
+//        mSharedPreferences
+//                .edit()
+//                .putLong(keys.serverMapsTimestamp, date)
+//                .apply();
+//    }
+//
+//    public long getCheckServerTimestamp() {
+//        return mSharedPreferences.getLong(keys.checkServerTimestamp, Consts.BAD_DATETIME);
+//    }
+//
+//    public void putCheckServerTimestamp(long dateTime) {
+//        mSharedPreferences
+//                .edit()
+//                .putLong(keys.checkServerTimestamp, dateTime)
+//                .apply();
+//    }
 
     @ActionOnHasUpdates
     private int getActionOnHasUpdates() {

@@ -55,11 +55,19 @@ public class MapFilesHelper {
 
     private static final String MAPS_INFO_FILE_NAME = "maps_info.json";
 
-    private static final String JSON_TIMESTAMP = "timestamp";
-    private static final String JSON_MAP_SUB_DIR = "directory";
-    private static final String JSON_FILES = "files";
-    private static final String JSON_FILE_NAME = "name";
-    private static final String JSON_FILE_TIMESTAMP = "timestamp";
+    private interface JsonFields {
+        String LOCAL_TIMESTAMP = "local timestamp";
+        String SERVER_TIMESTAMP = "server timestamp";
+
+        String LAST_CHECK_TIMESTAMP = "last check timestamp";
+
+        String MAP_SUB_DIR = "directory";
+
+        String FILES = "files";
+
+        String FILE_NAME = "name";
+        String FILE_TIMESTAMP = "timestamp";
+    }
 
     private MapFilesHelper() {
     }
@@ -70,26 +78,29 @@ public class MapFilesHelper {
     }
 
     private static boolean readFromJSONFile(@NonNull Context context, @NonNull MapFiles mapFiles) {
-        File file = getMapsInfoFile(context);
-
         try {
+            File file = getMapsInfoFile(context);
+
             UtilsFiles.checkFileExists(file);
 
             JSONObject json = UtilsFiles.readJSON(file);
 
             UtilsLog.d(LOG_ENABLED, TAG, "readFromJSONFile", "json == " + json.toString());
 
-            mapFiles.setTimestamp(json.getLong(JSON_TIMESTAMP));
+            mapFiles.setLocalTimestamp(json.getLong(JsonFields.LOCAL_TIMESTAMP));
+            mapFiles.setServerTimestamp(json.getLong(JsonFields.SERVER_TIMESTAMP));
 
-            mapFiles.setMapSubDir(json.getString(JSON_MAP_SUB_DIR));
+            mapFiles.setLastCheckTimestamp(json.getLong(JsonFields.LAST_CHECK_TIMESTAMP));
 
-            JSONArray files = json.getJSONArray(JSON_FILES);
+            mapFiles.setMapSubDir(json.getString(JsonFields.MAP_SUB_DIR));
+
+            JSONArray files = json.getJSONArray(JsonFields.FILES);
 
             JSONObject fileInfo;
             List<FileInfo> fileInfoList = mapFiles.getFileList();
             for (int i = 0, l = files.length(); i < l; i++) {
                 fileInfo = files.getJSONObject(i);
-                fileInfoList.add(new FileInfo(fileInfo.getString(JSON_FILE_NAME), new Date(fileInfo.getLong(JSON_FILE_TIMESTAMP))));
+                fileInfoList.add(new FileInfo(fileInfo.getString(JsonFields.FILE_NAME), new Date(fileInfo.getLong(JsonFields.FILE_TIMESTAMP))));
             }
 
             Collections.sort(fileInfoList);
@@ -103,12 +114,16 @@ public class MapFilesHelper {
         return false;
     }
 
-    private static boolean writeToJSONFile(@NonNull Context context, @NonNull MapFiles mapFiles) {
-        JSONObject json = new JSONObject();
-
+    public static boolean writeToJSONFile(@NonNull Context context, @NonNull MapFiles mapFiles) {
         try {
-            json.put(JSON_TIMESTAMP, mapFiles.getTimestamp());
-            json.put(JSON_MAP_SUB_DIR, mapFiles.getMapSubDir());
+            JSONObject json = new JSONObject();
+
+            json.put(JsonFields.LOCAL_TIMESTAMP, mapFiles.getLocalTimestamp());
+            json.put(JsonFields.SERVER_TIMESTAMP, mapFiles.getServerTimestamp());
+
+            json.put(JsonFields.LAST_CHECK_TIMESTAMP, mapFiles.getLastCheckTimestamp());
+
+            json.put(JsonFields.MAP_SUB_DIR, mapFiles.getMapSubDir());
 
             JSONArray files = new JSONArray();
 
@@ -117,13 +132,13 @@ public class MapFilesHelper {
             for (FileInfo fileInfo : mapFiles.getFileList()) {
                 fileInfoObject = new JSONObject();
 
-                fileInfoObject.put(JSON_FILE_NAME, fileInfo.getMapName());
-                fileInfoObject.put(JSON_FILE_TIMESTAMP, fileInfo.getDate().getTime());
+                fileInfoObject.put(JsonFields.FILE_NAME, fileInfo.getMapName());
+                fileInfoObject.put(JsonFields.FILE_TIMESTAMP, fileInfo.getDate().getTime());
 
                 files.put(fileInfoObject);
             }
 
-            json.put(JSON_FILES, files);
+            json.put(JsonFields.FILES, files);
 
             UtilsLog.d(LOG_ENABLED, TAG, "writeToJSONFile", "json == " + json.toString());
 
@@ -330,7 +345,9 @@ public class MapFilesHelper {
         UtilsLog.d(LOG_ENABLED, TAG, "checkFiles", "filesEquals == " + filesEquals);
 
         if (filesEquals) {
-            mapFiles.setTimestamp(savedMapFiles.getTimestamp());
+            mapFiles.setLocalTimestamp(savedMapFiles.getLocalTimestamp());
+            mapFiles.setServerTimestamp(savedMapFiles.getServerTimestamp());
+            mapFiles.setLastCheckTimestamp(savedMapFiles.getLastCheckTimestamp());
         } else {
             long timestamp = Consts.BAD_DATETIME;
 
@@ -342,7 +359,7 @@ public class MapFilesHelper {
                 timestamp = mapDirNameToTimestamp(mapFiles.getMapSubDir());
             }
 
-            mapFiles.setTimestamp(timestamp);
+            mapFiles.setLocalTimestamp(timestamp);
 
             writeToJSONFile(context, mapFiles);
         }

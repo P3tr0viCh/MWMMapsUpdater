@@ -10,6 +10,7 @@ import java.text.SimpleDateFormat;
 import java.util.Locale;
 
 import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
+import ru.p3tr0vich.mwmmapsupdater.Consts;
 
 public class UtilsLog {
     private static final String LOG_TAG = "XXX";
@@ -17,7 +18,11 @@ public class UtilsLog {
     // TODO: отключить после разработки
     private static final boolean IGNORE_DEBUG = true;
 
-    public static final DateFormat DATETIME_FORMAT = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault());
+    private static final DateFormat DATETIME_FORMAT = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault());
+
+    public static String formatDate(long timestamp) {
+        return timestamp != Consts.BAD_DATETIME ? DATETIME_FORMAT.format(timestamp) : "BAD_DATETIME";
+    }
 
     private static String formatMsg(@Nullable String tag, @NonNull String msg, @Nullable String extMsg) {
         if (!TextUtils.isEmpty(tag)) {

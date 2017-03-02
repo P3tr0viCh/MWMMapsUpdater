@@ -9,7 +9,10 @@ import ru.p3tr0vich.mwmmapsupdater.Consts;
 
 public class MapFiles {
 
-    private long mTimestamp;
+    private long mLocalTimestamp;
+    private long mServerTimestamp;
+
+    private long mLastCheckTimestamp;
 
     private String mMapDir;
     private String mMapSubDir;
@@ -17,16 +20,36 @@ public class MapFiles {
     private final List<FileInfo> mFileList;
 
     public MapFiles() {
-        mTimestamp = Consts.BAD_DATETIME;
+        mLocalTimestamp = Consts.BAD_DATETIME;
+        mServerTimestamp = Consts.BAD_DATETIME;
+
+        mLastCheckTimestamp = Consts.BAD_DATETIME;
+
         mFileList = new ArrayList<>();
     }
 
-    public long getTimestamp() {
-        return mTimestamp;
+    public long getLocalTimestamp() {
+        return mLocalTimestamp;
     }
 
-    public void setTimestamp(long timestamp) {
-        mTimestamp = timestamp;
+    public void setLocalTimestamp(long timestamp) {
+        mLocalTimestamp = timestamp;
+    }
+
+    public long getServerTimestamp() {
+        return mServerTimestamp;
+    }
+
+    public void setServerTimestamp(long timestamp) {
+        mServerTimestamp = timestamp;
+    }
+
+    public long getLastCheckTimestamp() {
+        return mLastCheckTimestamp;
+    }
+
+    public void setLastCheckTimestamp(long timestamp) {
+        mLastCheckTimestamp = timestamp;
     }
 
     @NonNull
@@ -60,7 +83,9 @@ public class MapFiles {
     @Override
     public String toString() {
         return "MapFiles{" +
-                "mTimestamp=" + mTimestamp +
+                "mLocalTimestamp=" + mLocalTimestamp +
+                ", mServerTimestamp=" + mServerTimestamp +
+                ", mLastCheckTimestamp=" + mLastCheckTimestamp +
                 ", mMapDir='" + mMapDir + '\'' +
                 ", mMapSubDir='" + mMapSubDir + '\'' +
                 ", mFileList=" + mFileList +

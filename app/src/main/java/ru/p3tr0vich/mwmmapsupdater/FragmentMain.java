@@ -41,6 +41,7 @@ import ru.p3tr0vich.mwmmapsupdater.adapters.MapItemRecyclerViewAdapter;
 import ru.p3tr0vich.mwmmapsupdater.broadcastreceivers.BroadcastReceiverMapFilesLoading;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ConnectivityHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ContentResolverHelper;
+import ru.p3tr0vich.mwmmapsupdater.helpers.NotificationHelper;
 import ru.p3tr0vich.mwmmapsupdater.models.FileInfo;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
 import ru.p3tr0vich.mwmmapsupdater.models.MapItem;
@@ -65,10 +66,6 @@ public class FragmentMain extends FragmentBase implements
     private static final long RECHECK_SERVER_MILLIS = BuildConfig.DEBUG ?
             TimeUnit.SECONDS.toMillis(10) : TimeUnit.MINUTES.toMillis(10);
 
-    private static final String KEY_DATE_LOCAL = "KEY_DATE_LOCAL";
-    private static final String KEY_DATE_SERVER = "KEY_DATE_SERVER";
-    private static final String KEY_CHECK_SERVER_DATE_TIME = "KEY_CHECK_SERVER_DATE_TIME";
-
     private ViewGroup mLayoutError;
     private ViewGroup mLayoutMain;
 
@@ -77,10 +74,6 @@ public class FragmentMain extends FragmentBase implements
 
     private ImageView mImgCheckServer;
     private Animation mAnimationCheckServer;
-
-    private long mLocalMapsTimestamp;
-    private long mServerMapsTimestamp;
-    private long mCheckServerTimestamp;
 
     private MapItemRecyclerViewAdapter mMapItemRecyclerViewAdapter;
 
@@ -147,8 +140,10 @@ public class FragmentMain extends FragmentBase implements
 
         recyclerView.setAdapter(mMapItemRecyclerViewAdapter = new MapItemRecyclerViewAdapter(mListener));
 
-        view.findViewById(R.id.btn_check_server).setOnClickListener(mBtnCheckServerClickListener);
         view.findViewById(R.id.btn_retry_find_maps).setOnClickListener(mBtnRetryFindMapsClickListener);
+        view.findViewById(R.id.btn_check_server).setOnClickListener(mBtnCheckServerClickListener);
+
+        view.findViewById(R.id.floating_action_button).setOnClickListener(mBtnCheckServerClickListener);
 
         mLayoutError.setVisibility(View.GONE);
         mLayoutMain.setVisibility(View.GONE);
@@ -163,18 +158,6 @@ public class FragmentMain extends FragmentBase implements
         UtilsLog.d(LOG_ENABLED, TAG, "onActivityCreated", "savedInstanceState " + (savedInstanceState == null ? "=" : "!") + "= null");
 
         getLoaderManager().initLoader(MAP_FILES_LOADER_ID, null, this);
-
-        if (savedInstanceState == null) {
-            mLocalMapsTimestamp = preferencesHelper.getLocalMapsTimestamp();
-            mServerMapsTimestamp = preferencesHelper.getServerMapsTimestamp();
-
-            mCheckServerTimestamp = preferencesHelper.getCheckServerTimestamp();
-        } else {
-            mLocalMapsTimestamp = savedInstanceState.getLong(KEY_DATE_LOCAL, Consts.BAD_DATETIME);
-            mServerMapsTimestamp = savedInstanceState.getLong(KEY_DATE_SERVER, Consts.BAD_DATETIME);
-
-            mCheckServerTimestamp = savedInstanceState.getLong(KEY_CHECK_SERVER_DATE_TIME);
-        }
     }
 
     @Override
@@ -185,11 +168,10 @@ public class FragmentMain extends FragmentBase implements
 
         mSyncMonitor = ContentResolver.addStatusChangeListener(ContentResolver.SYNC_OBSERVER_TYPE_ACTIVE, this);
 
-        if (((System.currentTimeMillis() - mCheckServerTimestamp) > RECHECK_SERVER_MILLIS) ||
-                (mServerMapsTimestamp == Consts.BAD_DATETIME)) {
-            ContentResolverHelper.requestSync(mAppAccount);
-        } else {
-            updateDateServer(mServerMapsTimestamp);
+        updateSyncStatus();
+
+        if (!ContentResolverHelper.isSyncActive(mAppAccount)) {
+            new NotificationHelper(getContext()).cancel();
         }
     }
 
@@ -200,15 +182,6 @@ public class FragmentMain extends FragmentBase implements
         ContentResolver.removeStatusChangeListener(mSyncMonitor);
 
         super.onStop();
-    }
-
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-
-        outState.putSerializable(KEY_DATE_LOCAL, mLocalMapsTimestamp);
-        outState.putSerializable(KEY_DATE_SERVER, mServerMapsTimestamp);
-        outState.putLong(KEY_CHECK_SERVER_DATE_TIME, mCheckServerTimestamp);
     }
 
     @Override
@@ -251,13 +224,11 @@ public class FragmentMain extends FragmentBase implements
         mSyncProgressObserver = new SyncProgressObserver() {
             @Override
             public void onCheckServerTimestamp(long timestamp) {
-                mCheckServerTimestamp = timestamp;
             }
 
             @Override
             public void onServerMapsChecked(long timestamp) {
-                mServerMapsTimestamp = timestamp;
-                updateDateServer(mServerMapsTimestamp);
+                updateDateServer(timestamp);
             }
 
             @Override
@@ -275,7 +246,19 @@ public class FragmentMain extends FragmentBase implements
                 toast(getContext(), R.string.message_check_server_active);
             } else {
                 if (ConnectivityHelper.getConnectedState(getContext()) != ConnectivityHelper.DISCONNECTED) {
-                    ContentResolverHelper.requestSync(mAppAccount);
+                    int request;
+
+                    switch (v.getId()) {
+                        case R.id.floating_action_button:
+                            request = ContentResolverHelper.REQUEST_SYNC_DOWNLOAD;
+                            break;
+                        default:
+                        case R.id.btn_check_server:
+                            request = ContentResolverHelper.REQUEST_SYNC_CHECK;
+                            break;
+                    }
+
+                    ContentResolverHelper.requestSync(mAppAccount, request);
                 } else {
                     toast(getContext(), R.string.message_error_no_internet);
                 }
@@ -311,7 +294,7 @@ public class FragmentMain extends FragmentBase implements
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
         if (BuildConfig.DEBUG) {
-            inflater.inflate(R.menu.menu_main, menu);
+            inflater.inflate(R.menu.menu_main_debug, menu);
         }
     }
 
@@ -330,8 +313,12 @@ public class FragmentMain extends FragmentBase implements
         int i;
 
         switch (item.getItemId()) {
-            case R.id.action_main_update:
+            case R.id.action_main_update_local_files:
                 getLoaderManager().restartLoader(MAP_FILES_LOADER_ID, null, this);
+                break;
+            case R.id.action_main_start_sync_as_debug:
+                ContentResolverHelper.requestSyncDebug(mAppAccount);
+
                 break;
             case R.id.action_main_create_mwm_dir:
                 result = mapDir.mkdir();
@@ -552,12 +539,6 @@ public class FragmentMain extends FragmentBase implements
             List<FileInfo> fileInfoList = data.getFileList();
 
             if (!fileInfoList.isEmpty()) {
-                mLocalMapsTimestamp = data.getTimestamp();
-
-                updateDateLocal(mLocalMapsTimestamp);
-
-                preferencesHelper.putLocalMapsTimestamp(mLocalMapsTimestamp);
-
                 List<MapItem> mapItems = new ArrayList<>();
 
                 JSONObject namesAndDescriptions = Utils.getMapNamesAndDescriptions(getContext());
@@ -580,17 +561,29 @@ public class FragmentMain extends FragmentBase implements
 
                 mMapItemRecyclerViewAdapter.swapItems(mapItems);
 
+                updateDateLocal(data.getLocalTimestamp());
+
+                long serverTimestamp = data.getServerTimestamp();
+
+                updateDateServer(serverTimestamp);
+
                 mLayoutError.setVisibility(View.GONE);
                 mLayoutMain.setVisibility(View.VISIBLE);
+
+                if (((System.currentTimeMillis() - data.getLastCheckTimestamp()) > RECHECK_SERVER_MILLIS) ||
+                        (serverTimestamp == Consts.BAD_DATETIME)) {
+                    UtilsLog.d(LOG_ENABLED, TAG, "onLoadFinished", "requestSync");
+
+                    ContentResolverHelper.requestSync(mAppAccount, ContentResolverHelper.REQUEST_SYNC_CHECK);
+                } else {
+                    UtilsLog.d(LOG_ENABLED, TAG, "onLoadFinished", "requestSync no need");
+                }
 
                 return;
             }
         }
 
         // data == null or file list empty
-
-        preferencesHelper.putLocalMapsTimestamp(Consts.BAD_DATETIME); // TODO: delete?
-        preferencesHelper.putServerMapsTimestamp(Consts.BAD_DATETIME);
 
         mMapItemRecyclerViewAdapter.notifyItemRangeRemoved(0, mMapItemRecyclerViewAdapter.getItemCount());
 
@@ -610,7 +603,7 @@ public class FragmentMain extends FragmentBase implements
         mMapItemRecyclerViewAdapter.swapItems(null);
     }
 
-    private void updateCheckServerStatus() {
+    private void updateSyncStatus() {
         if (ContentResolverHelper.isSyncActive(mAppAccount)) {
             mImgCheckServer.startAnimation(mAnimationCheckServer);
         } else {
@@ -623,7 +616,7 @@ public class FragmentMain extends FragmentBase implements
         getActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                updateCheckServerStatus();
+                updateSyncStatus();
             }
         });
     }

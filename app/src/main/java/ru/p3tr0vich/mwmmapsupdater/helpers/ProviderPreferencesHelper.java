@@ -101,23 +101,23 @@ public class ProviderPreferencesHelper {
         return queryGetAsString(mPreferencesHelper.keys.parentMapsDir);
     }
 
-    public void putCheckServerTimestamp(long dateTime) throws RemoteException {
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(mPreferencesHelper.keys.checkServerTimestamp, dateTime);
-
-        update(contentValues, mPreferencesHelper.keys.checkServerTimestamp);
-    }
-
-    public long getServerMapsTimestamp() throws RemoteException, FormatException {
-        return queryGetAsLong(mPreferencesHelper.keys.serverMapsTimestamp);
-    }
-
-    public void putServerMapsTimestamp(long date) throws RemoteException {
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(mPreferencesHelper.keys.serverMapsTimestamp, date);
-
-        update(contentValues, mPreferencesHelper.keys.serverMapsTimestamp);
-    }
+//    public void putCheckServerTimestamp(long dateTime) throws RemoteException {
+//        ContentValues contentValues = new ContentValues();
+//        contentValues.put(mPreferencesHelper.keys.checkServerTimestamp, dateTime);
+//
+//        update(contentValues, mPreferencesHelper.keys.checkServerTimestamp);
+//    }
+//
+//    public long getServerMapsTimestamp() throws RemoteException, FormatException {
+//        return queryGetAsLong(mPreferencesHelper.keys.serverMapsTimestamp);
+//    }
+//
+//    public void putServerMapsTimestamp(long date) throws RemoteException {
+//        ContentValues contentValues = new ContentValues();
+//        contentValues.put(mPreferencesHelper.keys.serverMapsTimestamp, date);
+//
+//        update(contentValues, mPreferencesHelper.keys.serverMapsTimestamp);
+//    }
 
     @PreferencesHelper.ActionOnHasUpdates
     public int getActionOnHasUpdates() throws RemoteException, FormatException {

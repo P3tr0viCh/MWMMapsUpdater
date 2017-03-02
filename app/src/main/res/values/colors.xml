@@ -15,7 +15,7 @@
     <!-- 38% black -->
     <color name="disabled_text">#61000000</color>
 
-    <color name="error_text">#DD2C00</color>
+    <color name="error_text">#dd2c00</color>
 
     <color name="window_background">#FFFFFFFF</color>
 

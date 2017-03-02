@@ -75,6 +75,7 @@ static def appendVersionName(variant, defaultConfig) {
 }
 
 dependencies {
+    compile rootProject.ext.supportDesign
     compile rootProject.ext.supportAppCompat
     compile rootProject.ext.supportRecyclerView
 }

@@ -19,4 +19,6 @@
 
     <dimen name="layout_error_padding">16dp</dimen>
     <dimen name="layout_error_description_margin">8dp</dimen>
+
+    <dimen name="fab_margin_end">4dp</dimen>
 </resources>

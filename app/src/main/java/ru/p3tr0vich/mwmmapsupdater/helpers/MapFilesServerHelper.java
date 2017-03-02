@@ -18,6 +18,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
@@ -35,6 +36,7 @@ public class MapFilesServerHelper {
 
     private static final boolean DEBUG_DUMMY_FILE_INFO = false;
     private static final boolean DEBUG_DUMMY_DOWNLOAD = false;
+    private static final boolean DEBUG_DUMMY_DOWNLOAD_LOG_PROGRESS = false;
     private static final boolean DEBUG_RETURN_CURRENT_DATE = false;
     private static final boolean DEBUG_DOWNLOAD_WAIT_ENABLED = true;
     private static final boolean DEBUG_FILE_INFO_WAIT_ENABLED = false;
@@ -116,6 +118,13 @@ public class MapFilesServerHelper {
 
             lastModified = connection.getLastModified();
 
+            // TODO: 02.03.2017 convert timezone
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTimeInMillis(lastModified);
+            calendar.setTimeZone(TimeZone.getTimeZone("GMT"));
+
+            lastModified = calendar.getTimeInMillis();
+
             connection.disconnect();
         }
 
@@ -148,7 +157,7 @@ public class MapFilesServerHelper {
         return fileInfoList;
     }
 
-    public static long getTimestamp(@NonNull MapFiles mapFiles) throws IOException {
+    private static long getTimestamp(@NonNull MapFiles mapFiles) throws IOException {
         if (BuildConfig.DEBUG && DEBUG_RETURN_CURRENT_DATE) {
             Calendar calendar = Calendar.getInstance();
 
@@ -163,7 +172,7 @@ public class MapFilesServerHelper {
         if (BuildConfig.DEBUG && DEBUG_DUMMY_FILE_INFO) {
             Random rand = new Random();
 
-            if (rand.nextBoolean()) {
+            if (rand.nextInt(100) < 10) {
                 return Consts.BAD_DATETIME;
             }
         }
@@ -171,7 +180,7 @@ public class MapFilesServerHelper {
         List<FileInfo> fileInfoList = mapFiles.getFileList();
 
         if (fileInfoList.isEmpty()) {
-            UtilsLog.e(TAG, "getTimestamp", "fileInfoList empty");
+            UtilsLog.e(TAG, "getLocalTimestamp", "fileInfoList empty");
 
             return Consts.BAD_DATETIME;
         }
@@ -185,6 +194,12 @@ public class MapFilesServerHelper {
         fileInfoList = getFileInfoList(mapNames);
 
         return MapFilesHelper.getLatestTimestamp(fileInfoList);
+    }
+
+    public static void checkServerTimestamp(@NonNull MapFiles mapFiles) throws IOException {
+        long timestamp = getTimestamp(mapFiles);
+
+        mapFiles.setServerTimestamp(timestamp);
     }
 
     private static void download(@NonNull String mapName, @NonNull OnDownloadProgress onDownloadProgress) throws IOException {
@@ -223,8 +238,10 @@ public class MapFilesServerHelper {
                         }
                     }
 
-                    UtilsLog.d(LOG_ENABLED, TAG, "download",
-                            "read == " + read + ", total == " + total + ", progress == " + progress);
+                    if (DEBUG_DUMMY_DOWNLOAD_LOG_PROGRESS) {
+                        UtilsLog.d(LOG_ENABLED, TAG, "download",
+                                "read == " + read + ", total == " + total + ", progress == " + progress);
+                    }
 
                     onDownloadProgress.onProgress(progress);
                 } while (total <= fileLength);
