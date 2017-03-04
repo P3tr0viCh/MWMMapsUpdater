@@ -1,7 +1,9 @@
 package ru.p3tr0vich.mwmmapsupdater;
 
+import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SyncStatusObserver;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -51,8 +53,6 @@ import ru.p3tr0vich.mwmmapsupdater.utils.UtilsDate;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsFiles;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
-import static ru.p3tr0vich.mwmmapsupdater.utils.Utils.toast;
-
 public class FragmentMain extends FragmentBase implements
         LoaderManager.LoaderCallbacks<MapFiles>,
         SyncStatusObserver {
@@ -61,16 +61,28 @@ public class FragmentMain extends FragmentBase implements
 
     private static final boolean LOG_ENABLED = true;
 
+    private static final boolean DEBUG_WIFI_CONNECTED = false;
+
     private static final int MAP_FILES_LOADER_ID = 0;
 
     private static final long RECHECK_SERVER_MILLIS = BuildConfig.DEBUG ?
             TimeUnit.SECONDS.toMillis(10) : TimeUnit.MINUTES.toMillis(10);
+
+    private static final String KEY_DATE_LOCAL = "KEY_DATE_LOCAL";
+    private static final String KEY_DATE_SERVER = "KEY_DATE_SERVER";
+    private static final String KEY_CHECK_SERVER_DATE_TIME = "KEY_CHECK_SERVER_DATE_TIME";
+
+    private static final int REQUEST_CODE_DIALOG_QUESTION_WIFI_NOT_CONNECTED = 100;
 
     private ViewGroup mLayoutError;
     private ViewGroup mLayoutMain;
 
     private TextView mTextDateLocal;
     private TextView mTextDateServer;
+
+    private long mLocalMapsTimestamp;
+    private long mServerMapsTimestamp;
+    private long mCheckServerTimestamp;
 
     private ImageView mImgCheckServer;
     private Animation mAnimationCheckServer;
@@ -158,6 +170,21 @@ public class FragmentMain extends FragmentBase implements
         UtilsLog.d(LOG_ENABLED, TAG, "onActivityCreated", "savedInstanceState " + (savedInstanceState == null ? "=" : "!") + "= null");
 
         getLoaderManager().initLoader(MAP_FILES_LOADER_ID, null, this);
+
+        if (savedInstanceState == null) {
+            mLocalMapsTimestamp = preferencesHelper.getLocalMapsTimestamp();
+            mServerMapsTimestamp = preferencesHelper.getServerMapsTimestamp();
+
+            mCheckServerTimestamp = preferencesHelper.getCheckServerTimestamp();
+        } else {
+            mLocalMapsTimestamp = savedInstanceState.getLong(KEY_DATE_LOCAL, Consts.BAD_DATETIME);
+            mServerMapsTimestamp = savedInstanceState.getLong(KEY_DATE_SERVER, Consts.BAD_DATETIME);
+
+            mCheckServerTimestamp = savedInstanceState.getLong(KEY_CHECK_SERVER_DATE_TIME);
+        }
+
+        updateDateLocal(mLocalMapsTimestamp);
+        updateDateServer(mServerMapsTimestamp);
     }
 
     @Override
@@ -182,6 +209,15 @@ public class FragmentMain extends FragmentBase implements
         ContentResolver.removeStatusChangeListener(mSyncMonitor);
 
         super.onStop();
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        outState.putSerializable(KEY_DATE_LOCAL, mLocalMapsTimestamp);
+        outState.putSerializable(KEY_DATE_SERVER, mServerMapsTimestamp);
+        outState.putLong(KEY_CHECK_SERVER_DATE_TIME, mCheckServerTimestamp);
     }
 
     @Override
@@ -224,11 +260,18 @@ public class FragmentMain extends FragmentBase implements
         mSyncProgressObserver = new SyncProgressObserver() {
             @Override
             public void onCheckServerTimestamp(long timestamp) {
-                getLoaderManager().getLoader(MAP_FILES_LOADER_ID).onContentChanged();
+                mCheckServerTimestamp = timestamp;
+            }
+
+            @Override
+            public void onLocalMapsChecked(long timestamp) {
+                mLocalMapsTimestamp = timestamp;
+                updateDateLocal(timestamp);
             }
 
             @Override
             public void onServerMapsChecked(long timestamp) {
+                mServerMapsTimestamp = timestamp;
                 updateDateServer(timestamp);
             }
 
@@ -244,28 +287,54 @@ public class FragmentMain extends FragmentBase implements
         @Override
         public void onClick(View v) {
             if (ContentResolverHelper.isSyncActive(mAppAccount)) {
-                toast(getContext(), R.string.message_check_server_active);
+                Utils.toast(getContext(), R.string.message_check_server_active);
             } else {
-                if (ConnectivityHelper.getConnectedState(getContext()) != ConnectivityHelper.DISCONNECTED) {
-                    int request;
+                @ConnectivityHelper.ConnectedState
+                int connectedState = ConnectivityHelper.getConnectedState(getContext());
+
+                if (connectedState != ConnectivityHelper.DISCONNECTED) {
+                    if (BuildConfig.DEBUG) {
+                        if (connectedState == ConnectivityHelper.CONNECTED) {
+                            if (DEBUG_WIFI_CONNECTED) {
+                                connectedState = ConnectivityHelper.CONNECTED_WIFI;
+                            }
+                        }
+                    }
 
                     switch (v.getId()) {
                         case R.id.floating_action_button:
-                            request = ContentResolverHelper.REQUEST_SYNC_DOWNLOAD;
+                            if (preferencesHelper.isDownloadOnlyOnWifi() && connectedState != ConnectivityHelper.CONNECTED_WIFI ) {
+                                FragmentDialogQuestion.show(FragmentMain.this, REQUEST_CODE_DIALOG_QUESTION_WIFI_NOT_CONNECTED,
+                                        null,
+                                        R.string.message_dialog_download_without_wifi, R.string.dialog_btn_load, null);
+                            } else {
+                                ContentResolverHelper.requestSync(mAppAccount, ContentResolverHelper.REQUEST_SYNC_DOWNLOAD);
+                            }
+
                             break;
                         default:
                         case R.id.btn_check_server:
-                            request = ContentResolverHelper.REQUEST_SYNC_CHECK;
+                            ContentResolverHelper.requestSync(mAppAccount, ContentResolverHelper.REQUEST_SYNC_CHECK_SERVER);
+
                             break;
                     }
-
-                    ContentResolverHelper.requestSync(mAppAccount, request);
                 } else {
-                    toast(getContext(), R.string.message_error_no_internet);
+                    Utils.toast(getContext(), R.string.message_error_no_internet);
                 }
             }
         }
     };
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (resultCode != Activity.RESULT_OK) return;
+
+        switch (requestCode) {
+            case REQUEST_CODE_DIALOG_QUESTION_WIFI_NOT_CONNECTED:
+                ContentResolverHelper.requestSync(mAppAccount, ContentResolverHelper.REQUEST_SYNC_DOWNLOAD);
+                break;
+        }
+    }
 
     private final View.OnClickListener mBtnRetryFindMapsClickListener = new View.OnClickListener() {
         @Override
@@ -569,22 +638,29 @@ public class FragmentMain extends FragmentBase implements
 
                 mMapItemRecyclerViewAdapter.swapItems(mapItems);
 
-                updateDateLocal(data.getLocalTimestamp());
-
-                long serverTimestamp = data.getServerTimestamp();
-
-                updateDateServer(serverTimestamp);
-
                 mLayoutError.setVisibility(View.GONE);
                 mLayoutMain.setVisibility(View.VISIBLE);
 
-                if (((System.currentTimeMillis() - data.getLastCheckTimestamp()) > RECHECK_SERVER_MILLIS) ||
-                        (serverTimestamp == Consts.BAD_DATETIME)) {
-                    UtilsLog.d(LOG_ENABLED, TAG, "onLoadFinished", "requestSync");
+                long currentTimestamp = System.currentTimeMillis();
 
-                    ContentResolverHelper.requestSync(mAppAccount, ContentResolverHelper.REQUEST_SYNC_CHECK);
+                UtilsLog.d(LOG_ENABLED, TAG, "onLoadFinished", "mLocalMapsTimestamp == " + mLocalMapsTimestamp +
+                        ", mServerMapsTimestamp == " + mServerMapsTimestamp + ", mCheckServerTimestamp == " + mCheckServerTimestamp);
+                UtilsLog.d(LOG_ENABLED, TAG, "onLoadFinished", "currentTimestamp - mCheckServerTimestamp == " + (currentTimestamp - mCheckServerTimestamp));
+
+                if (mLocalMapsTimestamp == Consts.BAD_DATETIME) {
+                    UtilsLog.d(LOG_ENABLED, TAG, "onLoadFinished", "requestSync, check local files");
+
+                    ContentResolverHelper.requestSync(mAppAccount, ContentResolverHelper.REQUEST_SYNC_CHECK_LOCAL_FILES);
                 } else {
-                    UtilsLog.d(LOG_ENABLED, TAG, "onLoadFinished", "requestSync no need");
+                    if (((currentTimestamp - mCheckServerTimestamp) > RECHECK_SERVER_MILLIS) ||
+                            mCheckServerTimestamp == Consts.BAD_DATETIME ||
+                            mServerMapsTimestamp == Consts.BAD_DATETIME) {
+                        UtilsLog.d(LOG_ENABLED, TAG, "onLoadFinished", "requestSync, check server");
+
+                        ContentResolverHelper.requestSync(mAppAccount, ContentResolverHelper.REQUEST_SYNC_CHECK_SERVER);
+                    } else {
+                        UtilsLog.d(LOG_ENABLED, TAG, "onLoadFinished", "requestSync no need");
+                    }
                 }
 
                 return;

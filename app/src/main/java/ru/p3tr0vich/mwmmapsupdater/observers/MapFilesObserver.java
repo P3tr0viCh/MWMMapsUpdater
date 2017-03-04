@@ -46,10 +46,43 @@ public class MapFilesObserver extends FileObserver {
     public void onEvent(int event, String path) {
         mHandler.removeCallbacks(mRunnable);
 
-        UtilsLog.d(LOG_ENABLED, TAG, "onEvent", "path == " + path);
+        if (LOG_ENABLED) {
+            String sEvent = null;
 
-        if (path != null) {
-            mHandler.postDelayed(mRunnable, ON_CONTENT_CHANGED_DELAY);
+            switch (event) {
+                case CREATE:
+                    sEvent = "CREATE";
+                    break;
+                case DELETE:
+                    sEvent = "DELETE";
+                    break;
+                case DELETE_SELF:
+                    sEvent = "DELETE_SELF";
+                    break;
+                case MOVED_FROM:
+                    sEvent = "MOVED_FROM";
+                    break;
+                case MOVED_TO:
+                    sEvent = "MOVED_TO";
+                    break;
+                case MOVE_SELF:
+                    sEvent = "MOVE_SELF";
+                    break;
+                default:
+                    sEvent = "" + event;
+            }
+
+            UtilsLog.d(true, TAG, "onEvent", "event == " + sEvent + ", path == " + path);
+        }
+
+        switch (event) {
+            case CREATE:
+            case DELETE:
+            case DELETE_SELF:
+            case MOVED_FROM:
+            case MOVED_TO:
+            case MOVE_SELF:
+                mHandler.postDelayed(mRunnable, ON_CONTENT_CHANGED_DELAY);
         }
     }
 }

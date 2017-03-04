@@ -35,7 +35,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
     private static final String TAG = "SyncAdapter";
 
-    private static final boolean LOG_ENABLED = false;
+    private static final boolean LOG_ENABLED = true;
 
     private static final boolean DEBUG_WAIT_ENABLED = false;
     private static final boolean DEBUG_ALWAYS_HAS_UPDATES = true;
@@ -83,15 +83,23 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
         @ContentResolverHelper.RequestSync
         int manualRequest;
-        switch (extras.getInt(ContentResolverHelper.SYNC_EXTRAS_REQUEST, ContentResolverHelper.REQUEST_SYNC_CHECK)) {
+        switch (extras.getInt(ContentResolverHelper.SYNC_EXTRAS_REQUEST, ContentResolverHelper.REQUEST_SYNC_CHECK_LOCAL_FILES)) {
+            case ContentResolverHelper.REQUEST_SYNC_CHECK_SERVER:
+                manualRequest = ContentResolverHelper.REQUEST_SYNC_CHECK_SERVER;
+                UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "manualRequest == REQUEST_SYNC_CHECK_SERVER");
+                break;
             case ContentResolverHelper.REQUEST_SYNC_DOWNLOAD:
                 manualRequest = ContentResolverHelper.REQUEST_SYNC_DOWNLOAD;
                 UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "manualRequest == REQUEST_SYNC_DOWNLOAD");
                 break;
+            case ContentResolverHelper.REQUEST_SYNC_INSTALL:
+                manualRequest = ContentResolverHelper.REQUEST_SYNC_INSTALL;
+                UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "manualRequest == REQUEST_SYNC_INSTALL");
+                break;
             default:
-            case ContentResolverHelper.REQUEST_SYNC_CHECK:
-                manualRequest = ContentResolverHelper.REQUEST_SYNC_CHECK;
-                UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "manualRequest == REQUEST_SYNC_CHECK");
+            case ContentResolverHelper.REQUEST_SYNC_CHECK_LOCAL_FILES:
+                manualRequest = ContentResolverHelper.REQUEST_SYNC_CHECK_LOCAL_FILES;
+                UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "manualRequest == REQUEST_SYNC_CHECK_LOCAL_FILES");
                 break;
         }
 
@@ -113,50 +121,74 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
             String parentMapsDir = mProviderPreferencesHelper.getParentMapsDir();
 
-            mMapFiles = MapFilesHelper.find(getContext(), parentMapsDir);
+            mMapFiles = MapFilesHelper.find(parentMapsDir);
 
-            final long localMapsTimestamp = mMapFiles.getLocalTimestamp();
-
-            UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "local maps date == " + UtilsLog.formatDate(localMapsTimestamp));
-
-            if (localMapsTimestamp == Consts.BAD_DATETIME) {
-                throw new IOException("localMapsTimestamp == BAD_DATETIME");
-            }
-
-            final long savedServerMapsTimestamp = mMapFiles.getServerTimestamp();
-
-            UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "saved server maps date == " + UtilsLog.formatDate(savedServerMapsTimestamp));
-
-            MapFilesServerHelper.checkServerTimestamp(mMapFiles);
-
-            final long serverMapsTimestamp = mMapFiles.getServerTimestamp();
-
-            UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "server maps date == " + UtilsLog.formatDate(serverMapsTimestamp));
-
-            SyncProgressObserver.notifyServerMapsChecked(getContext(), serverMapsTimestamp);
-
-            if (serverMapsTimestamp == Consts.BAD_DATETIME) {
-                throw new IOException("serverMapsTimestamp == BAD_DATETIME");
-            }
-
-            //noinspection ConstantConditions
-            UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync",
-                    "serverMapsTimestamp > localMapsTimestamp == " + (serverMapsTimestamp > localMapsTimestamp) +
-                            ((BuildConfig.DEBUG && DEBUG_ALWAYS_HAS_UPDATES) ? " (ignored)" : ""));
-            //noinspection ConstantConditions
-            UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync",
-                    "serverMapsTimestamp != savedServerMapsTimestamp == " + (serverMapsTimestamp != savedServerMapsTimestamp) +
-                            ((BuildConfig.DEBUG && DEBUG_NOT_CHECK_SAVED_TIMESTAMP) ? " (ignored)" : ""));
+            final long localMapsTimestamp = getLocalMapsTimestamp();
 
             if (manualStart) {
-                manualSync(manualRequest);
+                if (manualRequest == ContentResolverHelper.REQUEST_SYNC_CHECK_SERVER ||
+                        manualRequest == ContentResolverHelper.REQUEST_SYNC_DOWNLOAD ||
+                        manualRequest == ContentResolverHelper.REQUEST_SYNC_INSTALL) {
+
+                    final long serverMapsTimestamp = getServerMapsTimestamp();
+
+                    if (manualRequest == ContentResolverHelper.REQUEST_SYNC_DOWNLOAD ||
+                            manualRequest == ContentResolverHelper.REQUEST_SYNC_INSTALL) {
+                        download(serverMapsTimestamp);
+                    }
+                }
             } else {
-                autoSync(localMapsTimestamp, serverMapsTimestamp, savedServerMapsTimestamp, connectedState);
+                final long savedServerMapsTimestamp = getSavedServerMapsTimestamp();
+
+                final long serverMapsTimestamp = getServerMapsTimestamp();
+
+                //noinspection ConstantConditions
+                UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync",
+                        "serverMapsTimestamp > localMapsTimestamp == " + (serverMapsTimestamp > localMapsTimestamp) +
+                                ((BuildConfig.DEBUG && DEBUG_ALWAYS_HAS_UPDATES) ? " (ignored)" : ""));
+                //noinspection ConstantConditions
+                UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync",
+                        "serverMapsTimestamp != savedServerMapsTimestamp == " + (serverMapsTimestamp != savedServerMapsTimestamp) +
+                                ((BuildConfig.DEBUG && DEBUG_NOT_CHECK_SAVED_TIMESTAMP) ? " (ignored)" : ""));
+
+                if ((serverMapsTimestamp > localMapsTimestamp) || (BuildConfig.DEBUG && DEBUG_ALWAYS_HAS_UPDATES)) {
+                    UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "has updates");
+
+                    if ((serverMapsTimestamp != savedServerMapsTimestamp) || (BuildConfig.DEBUG && DEBUG_NOT_CHECK_SAVED_TIMESTAMP)) {
+                        @PreferencesHelper.ActionOnHasUpdates
+                        int actionOnHasUpdates = mProviderPreferencesHelper.getActionOnHasUpdates();
+
+                        switch (actionOnHasUpdates) {
+                            case PreferencesHelper.ACTION_ON_HAS_UPDATES_DO_NOTHING:
+                                UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == do nothing");
+
+                                break;
+                            case PreferencesHelper.ACTION_ON_HAS_UPDATES_SHOW_NOTIFICATION:
+                                UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == show notification");
+
+                                mNotificationHelper.notifyHasUpdates(serverMapsTimestamp);
+
+                                break;
+                            case PreferencesHelper.ACTION_ON_HAS_UPDATES_DOWNLOAD:
+                                UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == download");
+
+                                if (checkWifi(connectedState)) {
+                                    download(serverMapsTimestamp);
+                                }
+
+                                break;
+                            case PreferencesHelper.ACTION_ON_HAS_UPDATES_INSTALL:
+                                UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == download and install");
+
+                                // TODO: 28.02.2017 download and copy to mwm dir
+
+                                break;
+                        }
+                    }
+                }
             }
 
             serverChecked();
-
-            MapFilesHelper.writeToJSONFile(getContext(), mMapFiles);
         } catch (Exception e) {
             mNotificationHelper.cancel();
 
@@ -198,49 +230,71 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         mMapFiles = null;
     }
 
-    private void manualSync(@ContentResolverHelper.RequestSync int request) throws FormatException, RemoteException, IOException {
-        if (request == ContentResolverHelper.REQUEST_SYNC_DOWNLOAD) {
-            download();
+    private long getLocalMapsTimestamp() throws RemoteException, FormatException, IOException {
+        long timestamp = Consts.BAD_DATETIME;
+
+        if (!mMapFiles.getFileList().isEmpty()) {
+            MapFiles savedMapFiles = new MapFiles();
+
+            boolean filesEquals = MapFilesHelper.readFromJSONFile(getContext(), savedMapFiles);
+
+            if (filesEquals) {
+                filesEquals = mMapFiles.getMapSubDir().equals(savedMapFiles.getMapSubDir()) &&
+                        mMapFiles.getFileList().equals(savedMapFiles.getFileList());
+            }
+
+            UtilsLog.d(LOG_ENABLED, TAG, "getLocalMapsTimestamp", "filesEquals == " + filesEquals);
+
+            if (filesEquals) {
+                timestamp = mProviderPreferencesHelper.getLocalMapsTimestamp();
+            } else {
+                MapFilesHelper.writeToJSONFile(getContext(), mMapFiles);
+            }
+
+            if (timestamp == Consts.BAD_DATETIME) {
+                timestamp = MapFilesHelper.mapDirNameToTimestamp(mMapFiles.getMapSubDir());
+
+                mProviderPreferencesHelper.putLocalMapsTimestamp(timestamp);
+            }
+        } else {
+            MapFilesHelper.deleteJSONFile(getContext());
+
+            mProviderPreferencesHelper.putLocalMapsTimestamp(timestamp);
         }
+
+        UtilsLog.d(LOG_ENABLED, TAG, "getLocalMapsTimestamp", "local maps date == " + UtilsLog.formatDate(timestamp));
+
+        SyncProgressObserver.notifyLocalMapsChecked(getContext(), timestamp);
+
+        if (timestamp == Consts.BAD_DATETIME) {
+            throw new IOException("local maps timestamp == BAD_DATETIME");
+        }
+
+        return timestamp;
     }
 
-    private void autoSync(long localMapsTimestamp, long serverMapsTimestamp, long savedServerMapsTimestamp,
-                          @ConnectivityHelper.ConnectedState int connectedState) throws RemoteException, FormatException, IOException {
-        if ((serverMapsTimestamp > localMapsTimestamp) || (BuildConfig.DEBUG && DEBUG_ALWAYS_HAS_UPDATES)) {
-            UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "has updates");
+    private long getServerMapsTimestamp() throws IOException, RemoteException {
+        long timestamp = MapFilesServerHelper.getServerFilesTimestamp(mMapFiles);
 
-            if ((serverMapsTimestamp != savedServerMapsTimestamp) || (BuildConfig.DEBUG && DEBUG_NOT_CHECK_SAVED_TIMESTAMP)) {
-                @PreferencesHelper.ActionOnHasUpdates
-                int actionOnHasUpdates = mProviderPreferencesHelper.getActionOnHasUpdates();
+        UtilsLog.d(LOG_ENABLED, TAG, "getServerMapsTimestamp", "server maps date == " + UtilsLog.formatDate(timestamp));
 
-                switch (actionOnHasUpdates) {
-                    case PreferencesHelper.ACTION_ON_HAS_UPDATES_DO_NOTHING:
-                        UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == do nothing");
+        mProviderPreferencesHelper.putServerMapsTimestamp(timestamp);
 
-                        break;
-                    case PreferencesHelper.ACTION_ON_HAS_UPDATES_SHOW_NOTIFICATION:
-                        UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == show notification");
+        SyncProgressObserver.notifyServerMapsChecked(getContext(), timestamp);
 
-                        mNotificationHelper.notifyHasUpdates(serverMapsTimestamp);
-
-                        break;
-                    case PreferencesHelper.ACTION_ON_HAS_UPDATES_DOWNLOAD:
-                        UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == download");
-
-                        checkWifi(connectedState);
-
-                        download();
-
-                        break;
-                    case PreferencesHelper.ACTION_ON_HAS_UPDATES_INSTALL:
-                        UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == download and install");
-
-                        // TODO: 28.02.2017 download and copy to mwm dir
-
-                        break;
-                }
-            }
+        if (timestamp == Consts.BAD_DATETIME) {
+            throw new IOException("server maps timestamp == BAD_DATETIME");
         }
+
+        return timestamp;
+    }
+
+    private long getSavedServerMapsTimestamp() throws IOException, RemoteException, FormatException {
+        long timestamp = mProviderPreferencesHelper.getServerMapsTimestamp();
+
+        UtilsLog.d(LOG_ENABLED, TAG, "getSavedServerMapsTimestamp", "saved server maps date == " + UtilsLog.formatDate(timestamp));
+
+        return timestamp;
     }
 
     private void serverChecked() throws RemoteException {
@@ -248,24 +302,26 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
         UtilsLog.d(LOG_ENABLED, TAG, "serverChecked", "current date == " + UtilsLog.formatDate(currentTimeMillis));
 
-        mMapFiles.setLastCheckTimestamp(currentTimeMillis);
+        mProviderPreferencesHelper.putCheckServerTimestamp(currentTimeMillis);
 
         SyncProgressObserver.notifyCheckServerTimestamp(getContext(), currentTimeMillis);
     }
 
-    private void checkWifi(@ConnectivityHelper.ConnectedState int connectedState) throws RemoteException, FormatException, IOException {
+    private boolean checkWifi(@ConnectivityHelper.ConnectedState int connectedState) throws RemoteException, FormatException, IOException {
         if (!BuildConfig.DEBUG) {
             boolean downloadOnlyOnWifi = mProviderPreferencesHelper.isDownloadOnlyOnWifi();
 
             if (downloadOnlyOnWifi && connectedState != ConnectivityHelper.CONNECTED_WIFI) {
                 // TODO: 28.02.2017 write pref "check on wifi enabled" and start sync after wifi connected
 
-                throw new IOException("wifi required");
+                return false;
             }
         }
+
+        return true;
     }
 
-    private void download() throws IOException, RemoteException, FormatException {
+    private void download(final long serverFilesTimestamp) throws IOException, RemoteException, FormatException {
         MapFilesServerHelper.downloadMaps(mMapFiles, new MapFilesServerHelper.OnDownloadProgress() {
 
             private final JSONObject namesAndDescriptions = Utils.getMapNamesAndDescriptions(getContext());
@@ -295,8 +351,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
             @Override
             public void onEnd() {
-                mNotificationHelper.notifyDownloadEnd(mMapFiles.getServerTimestamp());
+                mNotificationHelper.notifyDownloadEnd(serverFilesTimestamp);
             }
         });
-   }
+    }
 }

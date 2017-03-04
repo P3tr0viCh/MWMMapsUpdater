@@ -1,5 +1,6 @@
 package ru.p3tr0vich.mwmmapsupdater;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.Toast;
@@ -32,6 +33,10 @@ public class ActivityMain extends AppCompatActivity implements
 
     @Override
     public void onFragmentChange(FragmentInterface fragment) {
+    }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
     }
 }

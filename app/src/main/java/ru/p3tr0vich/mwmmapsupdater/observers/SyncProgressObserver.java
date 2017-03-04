@@ -29,35 +29,42 @@ public abstract class SyncProgressObserver extends ContentObserverBase {
 
         String lastPath;
 
-        switch (AppContentProvider.uriMatch(uri)) {
+        int uriMatch = AppContentProvider.uriMatch(uri);
+
+        switch (uriMatch) {
+            case AppContentProvider.UriMatchResult.SYNC_PROGRESS_LOCAL_MAPS_CHECKED_ITEM:
+            case AppContentProvider.UriMatchResult.SYNC_PROGRESS_SERVER_MAPS_CHECKED_ITEM:
             case AppContentProvider.UriMatchResult.SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP_ITEM:
                 lastPath = uri.getLastPathSegment();
 
-                UtilsLog.d(LOG_ENABLED, TAG, "onChange", "uriMatch == SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP_ITEM, lastPath == " + lastPath);
+                if (LOG_ENABLED) {
+                    String sUriMatch = null;
 
-                long checkServerTimestamp;
-                if (TextUtils.isEmpty(lastPath)) {
-                    checkServerTimestamp = Consts.BAD_DATETIME;
-                } else {
-                    checkServerTimestamp = Long.parseLong(lastPath);
+                    switch (uriMatch) {
+                        case AppContentProvider.UriMatchResult.SYNC_PROGRESS_LOCAL_MAPS_CHECKED_ITEM:
+                            sUriMatch = "SYNC_PROGRESS_LOCAL_MAPS_CHECKED_ITEM";
+                        case AppContentProvider.UriMatchResult.SYNC_PROGRESS_SERVER_MAPS_CHECKED_ITEM:
+                            sUriMatch = "SYNC_PROGRESS_SERVER_MAPS_CHECKED_ITEM";
+                        case AppContentProvider.UriMatchResult.SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP_ITEM:
+                            sUriMatch = "SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP_ITEM";
+                    }
+
+                    UtilsLog.d(true, TAG, "onChange", "uriMatch == " + sUriMatch + ", lastPath == " + lastPath);
                 }
 
-                onCheckServerTimestamp(checkServerTimestamp);
+                long timestamp = TextUtils.isEmpty(lastPath) ? Consts.BAD_DATETIME : Long.parseLong(lastPath);
 
-                break;
-            case AppContentProvider.UriMatchResult.SYNC_PROGRESS_SERVER_MAPS_CHECKED_ITEM:
-                lastPath = uri.getLastPathSegment();
-
-                UtilsLog.d(LOG_ENABLED, TAG, "onChange", "uriMatch == SYNC_PROGRESS_SERVER_MAPS_CHECKED_ITEM, lastPath == " + lastPath);
-
-                long serverMapsTimestamp;
-                if (TextUtils.isEmpty(lastPath)) {
-                    serverMapsTimestamp = Consts.BAD_DATETIME;
-                } else {
-                    serverMapsTimestamp = Long.parseLong(lastPath);
+                switch (uriMatch) {
+                    case AppContentProvider.UriMatchResult.SYNC_PROGRESS_LOCAL_MAPS_CHECKED_ITEM:
+                        onLocalMapsChecked(timestamp);
+                        break;
+                    case AppContentProvider.UriMatchResult.SYNC_PROGRESS_SERVER_MAPS_CHECKED_ITEM:
+                        onServerMapsChecked(timestamp);
+                        break;
+                    case AppContentProvider.UriMatchResult.SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP_ITEM:
+                        onCheckServerTimestamp(timestamp);
+                        break;
                 }
-
-                onServerMapsChecked(serverMapsTimestamp);
 
                 break;
             case AppContentProvider.UriMatchResult.SYNC_PROGRESS_ERROR_OCCURRED:
@@ -67,14 +74,16 @@ public abstract class SyncProgressObserver extends ContentObserverBase {
         }
     }
 
-    public abstract void onCheckServerTimestamp(long timestamp);
+    public abstract void onLocalMapsChecked(long timestamp);
 
     public abstract void onServerMapsChecked(long timestamp);
 
+    public abstract void onCheckServerTimestamp(long timestamp);
+
     public abstract void onErrorOccurred();
 
-    public static void notifyCheckServerTimestamp(@NonNull Context context, long timestamp) {
-        Uri uri = Uri.withAppendedPath(AppContentProvider.UriList.SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP,
+    public static void notifyLocalMapsChecked(@NonNull Context context, long timestamp) {
+        Uri uri = Uri.withAppendedPath(AppContentProvider.UriList.SYNC_PROGRESS_LOCAL_MAPS_CHECKED,
                 String.valueOf(timestamp));
 
         notifyChange(context, uri);
@@ -82,6 +91,13 @@ public abstract class SyncProgressObserver extends ContentObserverBase {
 
     public static void notifyServerMapsChecked(@NonNull Context context, long timestamp) {
         Uri uri = Uri.withAppendedPath(AppContentProvider.UriList.SYNC_PROGRESS_SERVER_MAPS_CHECKED,
+                String.valueOf(timestamp));
+
+        notifyChange(context, uri);
+    }
+
+    public static void notifyCheckServerTimestamp(@NonNull Context context, long timestamp) {
+        Uri uri = Uri.withAppendedPath(AppContentProvider.UriList.SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP,
                 String.valueOf(timestamp));
 
         notifyChange(context, uri);

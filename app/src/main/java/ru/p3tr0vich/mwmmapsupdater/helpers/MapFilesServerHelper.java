@@ -33,8 +33,8 @@ public class MapFilesServerHelper {
 
     private static final boolean LOG_ENABLED = true;
 
-    private static final boolean DEBUG_DUMMY_FILE_INFO = true;
-    private static final boolean DEBUG_DUMMY_DOWNLOAD = false;
+    private static final boolean DEBUG_DUMMY_FILE_INFO = false;
+    private static final boolean DEBUG_DUMMY_DOWNLOAD = true;
     private static final boolean DEBUG_DUMMY_DOWNLOAD_LOG_PROGRESS = false;
     private static final boolean DEBUG_RETURN_CURRENT_DATE = false;
     private static final boolean DEBUG_DOWNLOAD_WAIT_ENABLED = true;
@@ -149,7 +149,7 @@ public class MapFilesServerHelper {
         return fileInfoList;
     }
 
-    private static long getTimestamp(@NonNull MapFiles mapFiles) throws IOException {
+    public static long getServerFilesTimestamp(@NonNull MapFiles mapFiles) throws IOException {
         if (BuildConfig.DEBUG && DEBUG_RETURN_CURRENT_DATE) {
             Calendar calendar = Calendar.getInstance();
 
@@ -171,12 +171,6 @@ public class MapFilesServerHelper {
 
         List<FileInfo> fileInfoList = mapFiles.getFileList();
 
-        if (fileInfoList.isEmpty()) {
-            UtilsLog.e(TAG, "getLocalTimestamp", "fileInfoList empty");
-
-            return Consts.BAD_DATETIME;
-        }
-
         List<String> mapNames = new ArrayList<>();
 
         for (FileInfo fileInfo : fileInfoList) {
@@ -186,12 +180,6 @@ public class MapFilesServerHelper {
         fileInfoList = getFileInfoList(mapNames);
 
         return MapFilesHelper.getLatestTimestamp(fileInfoList);
-    }
-
-    public static void checkServerTimestamp(@NonNull MapFiles mapFiles) throws IOException {
-        long timestamp = getTimestamp(mapFiles);
-
-        mapFiles.setServerTimestamp(timestamp);
     }
 
     private static void download(@NonNull String mapName, @NonNull OnDownloadProgress onDownloadProgress) throws IOException {

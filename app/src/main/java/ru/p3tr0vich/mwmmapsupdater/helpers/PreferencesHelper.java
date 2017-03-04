@@ -18,6 +18,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.Map;
 
+import ru.p3tr0vich.mwmmapsupdater.Consts;
 import ru.p3tr0vich.mwmmapsupdater.R;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
@@ -76,7 +77,10 @@ public class PreferencesHelper {
 
     public static class Keys {
         @Retention(RetentionPolicy.SOURCE)
-        @IntDef({UNKNOWN, PARENT_MAPS_DIR, ACTION_ON_HAS_UPDATES, DOWNLOAD_ONLY_ON_WIFI})
+        @IntDef({UNKNOWN,
+                PARENT_MAPS_DIR,
+                LOCAL_MAPS_TIMESTAMP, SERVER_MAPS_TIMESTAMP, CHECK_SERVER_TIMESTAMP,
+                ACTION_ON_HAS_UPDATES, DOWNLOAD_ONLY_ON_WIFI})
         public @interface KeyAsInt {
         }
 
@@ -84,6 +88,15 @@ public class PreferencesHelper {
 
         public final String parentMapsDir;
         public static final int PARENT_MAPS_DIR = R.string.pref_key_parent_maps_dir;
+
+        public final String localMapsTimestamp;
+        public static final int LOCAL_MAPS_TIMESTAMP = R.string.pref_key_local_maps_timestamp;
+
+        public final String serverMapsTimestamp;
+        public static final int SERVER_MAPS_TIMESTAMP = R.string.pref_key_server_maps_timestamp;
+
+        public final String checkServerTimestamp;
+        public static final int CHECK_SERVER_TIMESTAMP = R.string.pref_key_check_server_timestamp;
 
         public final String actionOnHasUpdates;
         public static final int ACTION_ON_HAS_UPDATES = R.string.pref_key_action_on_has_updates;
@@ -93,6 +106,11 @@ public class PreferencesHelper {
 
         private Keys(@NonNull Context context) {
             parentMapsDir = context.getString(PARENT_MAPS_DIR);
+
+            localMapsTimestamp = context.getString(LOCAL_MAPS_TIMESTAMP);
+            serverMapsTimestamp = context.getString(SERVER_MAPS_TIMESTAMP);
+            checkServerTimestamp = context.getString(CHECK_SERVER_TIMESTAMP);
+
             actionOnHasUpdates = context.getString(ACTION_ON_HAS_UPDATES);
             downloadOnlyOnWifi = context.getString(DOWNLOAD_ONLY_ON_WIFI);
         }
@@ -100,6 +118,9 @@ public class PreferencesHelper {
         @KeyAsInt
         public int getAsInt(@Nullable String key) {
             if (parentMapsDir.equals(key)) return PARENT_MAPS_DIR;
+            if (localMapsTimestamp.equals(key)) return LOCAL_MAPS_TIMESTAMP;
+            if (serverMapsTimestamp.equals(key)) return SERVER_MAPS_TIMESTAMP;
+            if (checkServerTimestamp.equals(key)) return CHECK_SERVER_TIMESTAMP;
             if (actionOnHasUpdates.equals(key)) return ACTION_ON_HAS_UPDATES;
             if (downloadOnlyOnWifi.equals(key)) return DOWNLOAD_ONLY_ON_WIFI;
             return UNKNOWN;
@@ -127,6 +148,11 @@ public class PreferencesHelper {
     @PreferenceType
     public int getPreferenceType(@NonNull String key) {
         switch (keys.getAsInt(key)) {
+            case Keys.CHECK_SERVER_TIMESTAMP:
+            case Keys.LOCAL_MAPS_TIMESTAMP:
+            case Keys.SERVER_MAPS_TIMESTAMP:
+                return PREFERENCE_TYPE_LONG;
+
             case Keys.PARENT_MAPS_DIR:
                 return PREFERENCE_TYPE_STRING;
 
@@ -173,6 +199,15 @@ public class PreferencesHelper {
                 case Keys.PARENT_MAPS_DIR:
                     result.put(preference, getParentMapsDir());
                     break;
+                case Keys.LOCAL_MAPS_TIMESTAMP:
+                    result.put(preference, getLocalMapsTimestamp());
+                    break;
+                case Keys.SERVER_MAPS_TIMESTAMP:
+                    result.put(preference, getServerMapsTimestamp());
+                    break;
+                case Keys.CHECK_SERVER_TIMESTAMP:
+                    result.put(preference, getCheckServerTimestamp());
+                    break;
                 case Keys.ACTION_ON_HAS_UPDATES:
                     result.put(preference, getActionOnHasUpdates());
                     break;
@@ -185,8 +220,10 @@ public class PreferencesHelper {
             }
         }
 
-        for (String key : result.keySet()) {
-            UtilsLog.d(LOG_ENABLED, TAG, "getPreferences", "key == " + key + ", value == " + result.getAsString(key));
+        if (LOG_ENABLED) {
+            for (String key : result.keySet()) {
+                UtilsLog.d(true, TAG, "getPreferences", "key == " + key + ", value == " + result.getAsString(key));
+            }
         }
 
         return result;
@@ -251,6 +288,15 @@ public class PreferencesHelper {
                 case Keys.PARENT_MAPS_DIR:
                     putParentMapsDir(preferences.getAsString(preference));
                     break;
+                case Keys.LOCAL_MAPS_TIMESTAMP:
+                    putLocalMapsTimestamp(preferences.getAsLong(preference));
+                    break;
+                case Keys.SERVER_MAPS_TIMESTAMP:
+                    putServerMapsTimestamp(preferences.getAsLong(preference));
+                    break;
+                case Keys.CHECK_SERVER_TIMESTAMP:
+                    putCheckServerTimestamp(preferences.getAsLong(preference));
+                    break;
                 case Keys.ACTION_ON_HAS_UPDATES:
                     putActionOnHasUpdates(getActionOnHasUpdatesFromInt(preferences.getAsInteger(preference)));
                     break;
@@ -291,6 +337,39 @@ public class PreferencesHelper {
         mSharedPreferences
                 .edit()
                 .putString(keys.parentMapsDir, dirName)
+                .apply();
+    }
+
+    public long getLocalMapsTimestamp() {
+        return mSharedPreferences.getLong(keys.localMapsTimestamp, Consts.BAD_DATETIME);
+    }
+
+    public void putLocalMapsTimestamp(long date) {
+        mSharedPreferences
+                .edit()
+                .putLong(keys.localMapsTimestamp, date)
+                .apply();
+    }
+
+    public long getServerMapsTimestamp() {
+        return mSharedPreferences.getLong(keys.serverMapsTimestamp, Consts.BAD_DATETIME);
+    }
+
+    public void putServerMapsTimestamp(long date) {
+        mSharedPreferences
+                .edit()
+                .putLong(keys.serverMapsTimestamp, date)
+                .apply();
+    }
+
+    public long getCheckServerTimestamp() {
+        return mSharedPreferences.getLong(keys.checkServerTimestamp, Consts.BAD_DATETIME);
+    }
+
+    public void putCheckServerTimestamp(long dateTime) {
+        mSharedPreferences
+                .edit()
+                .putLong(keys.checkServerTimestamp, dateTime)
                 .apply();
     }
 

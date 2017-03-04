@@ -30,13 +30,15 @@ public class ContentResolverHelper {
     private static final long POLL_FREQUENCY_12_HRS_IN_SECS = TimeUnit.HOURS.toSeconds(12);
 
     @Retention(RetentionPolicy.SOURCE)
-    @IntDef({REQUEST_SYNC_CHECK, REQUEST_SYNC_DOWNLOAD, REQUEST_SYNC_INSTALL})
+    @IntDef({REQUEST_SYNC_CHECK_LOCAL_FILES, REQUEST_SYNC_CHECK_SERVER,
+            REQUEST_SYNC_DOWNLOAD, REQUEST_SYNC_INSTALL})
     public @interface RequestSync {
     }
 
-    public static final int REQUEST_SYNC_CHECK = 0;
-    public static final int REQUEST_SYNC_DOWNLOAD = 1;
-    public static final int REQUEST_SYNC_INSTALL = 2;
+    public static final int REQUEST_SYNC_CHECK_LOCAL_FILES = 0;
+    public static final int REQUEST_SYNC_CHECK_SERVER = 1;
+    public static final int REQUEST_SYNC_DOWNLOAD = 2;
+    public static final int REQUEST_SYNC_INSTALL = 3;
 
     public static final String SYNC_EXTRAS_REQUEST = "request";
 

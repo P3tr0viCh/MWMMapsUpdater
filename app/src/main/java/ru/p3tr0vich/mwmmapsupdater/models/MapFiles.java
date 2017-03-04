@@ -5,54 +5,17 @@ import android.support.annotation.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 
-import ru.p3tr0vich.mwmmapsupdater.Consts;
-
 public class MapFiles {
-
-    private long mLocalTimestamp;
-    private long mServerTimestamp;
-
-    private long mLastCheckTimestamp;
-
     private String mMapDir;
     private String mMapSubDir;
 
     private final List<FileInfo> mFileList;
 
     public MapFiles() {
-        mLocalTimestamp = Consts.BAD_DATETIME;
-        mServerTimestamp = Consts.BAD_DATETIME;
-
-        mLastCheckTimestamp = Consts.BAD_DATETIME;
-
         mMapDir = "";
         mMapSubDir = "";
 
         mFileList = new ArrayList<>();
-    }
-
-    public long getLocalTimestamp() {
-        return mLocalTimestamp;
-    }
-
-    public void setLocalTimestamp(long timestamp) {
-        mLocalTimestamp = timestamp;
-    }
-
-    public long getServerTimestamp() {
-        return mServerTimestamp;
-    }
-
-    public void setServerTimestamp(long timestamp) {
-        mServerTimestamp = timestamp;
-    }
-
-    public long getLastCheckTimestamp() {
-        return mLastCheckTimestamp;
-    }
-
-    public void setLastCheckTimestamp(long timestamp) {
-        mLastCheckTimestamp = timestamp;
     }
 
     @NonNull
@@ -86,10 +49,7 @@ public class MapFiles {
     @Override
     public String toString() {
         return "MapFiles{" +
-                "mLocalTimestamp=" + mLocalTimestamp +
-                ", mServerTimestamp=" + mServerTimestamp +
-                ", mLastCheckTimestamp=" + mLastCheckTimestamp +
-                ", mMapDir='" + mMapDir + '\'' +
+                "mMapDir='" + mMapDir + '\'' +
                 ", mMapSubDir='" + mMapSubDir + '\'' +
                 ", mFileList=" + mFileList +
                 '}';

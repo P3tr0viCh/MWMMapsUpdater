@@ -56,11 +56,6 @@ public class MapFilesHelper {
     private static final String MAPS_INFO_FILE_NAME = "maps_info.json";
 
     private interface JsonFields {
-        String LOCAL_TIMESTAMP = "local timestamp";
-        String SERVER_TIMESTAMP = "server timestamp";
-
-        String LAST_CHECK_TIMESTAMP = "last check timestamp";
-
         String MAP_SUB_DIR = "directory";
 
         String FILES = "files";
@@ -77,7 +72,7 @@ public class MapFilesHelper {
         return new File(context.getFilesDir(), MAPS_INFO_FILE_NAME);
     }
 
-    private static boolean readFromJSONFile(@NonNull Context context, @NonNull MapFiles mapFiles) {
+    public static boolean readFromJSONFile(@NonNull Context context, @NonNull MapFiles mapFiles) {
         try {
             File file = getMapsInfoFile(context);
 
@@ -86,11 +81,6 @@ public class MapFilesHelper {
             JSONObject json = UtilsFiles.readJSON(file);
 
             UtilsLog.d(LOG_ENABLED, TAG, "readFromJSONFile", "json == " + json.toString());
-
-            mapFiles.setLocalTimestamp(json.getLong(JsonFields.LOCAL_TIMESTAMP));
-            mapFiles.setServerTimestamp(json.getLong(JsonFields.SERVER_TIMESTAMP));
-
-            mapFiles.setLastCheckTimestamp(json.getLong(JsonFields.LAST_CHECK_TIMESTAMP));
 
             mapFiles.setMapSubDir(json.getString(JsonFields.MAP_SUB_DIR));
 
@@ -117,11 +107,6 @@ public class MapFilesHelper {
     public static boolean writeToJSONFile(@NonNull Context context, @NonNull MapFiles mapFiles) {
         try {
             JSONObject json = new JSONObject();
-
-            json.put(JsonFields.LOCAL_TIMESTAMP, mapFiles.getLocalTimestamp());
-            json.put(JsonFields.SERVER_TIMESTAMP, mapFiles.getServerTimestamp());
-
-            json.put(JsonFields.LAST_CHECK_TIMESTAMP, mapFiles.getLastCheckTimestamp());
 
             json.put(JsonFields.MAP_SUB_DIR, mapFiles.getMapSubDir());
 
@@ -183,7 +168,7 @@ public class MapFilesHelper {
         return new FileInfo(mapName, new Date(lastModified));
     }
 
-    private static long mapDirNameToTimestamp(@NonNull String mapDirName) {
+    public static long mapDirNameToTimestamp(@NonNull String mapDirName) {
         if (!TextUtils.isEmpty(mapDirName)) {
             try {
                 // mapSubDir == '171232' ==> '180101';
@@ -198,20 +183,7 @@ public class MapFilesHelper {
     }
 
     @NonNull
-    public static MapFiles find(@NonNull Context context, @NonNull String parentMapsDir) {
-        MapFiles mapFiles = findFiles(parentMapsDir);
-
-        if (mapFiles.getFileList().isEmpty()) {
-            deleteJSONFile(context);
-        } else {
-            checkFiles(context, mapFiles);
-        }
-
-        return mapFiles;
-    }
-
-    @NonNull
-    private static MapFiles findFiles(@NonNull String mapDirName) {
+    public static MapFiles find(@NonNull String mapDirName) {
         if (BuildConfig.DEBUG && DEBUG_WAIT_ENABLED) {
             for (int i = 0, waitSeconds = 5; i < waitSeconds; i++) {
                 try {
@@ -326,43 +298,6 @@ public class MapFilesHelper {
         mapFiles.setFileList(fileInfoList);
 
         return mapFiles;
-    }
-
-    private static void checkFiles(@NonNull Context context, @NonNull MapFiles mapFiles) {
-        MapFiles savedMapFiles = new MapFiles();
-
-        boolean filesEquals = readFromJSONFile(context, savedMapFiles);
-
-        boolean mapSubDirEquals = false;
-
-        if (filesEquals) {
-            mapSubDirEquals = mapFiles.getMapSubDir().equals(savedMapFiles.getMapSubDir());
-
-            filesEquals = mapSubDirEquals &&
-                    mapFiles.getFileList().equals(savedMapFiles.getFileList());
-        }
-
-        UtilsLog.d(LOG_ENABLED, TAG, "checkFiles", "filesEquals == " + filesEquals);
-
-        if (filesEquals) {
-            mapFiles.setLocalTimestamp(savedMapFiles.getLocalTimestamp());
-            mapFiles.setServerTimestamp(savedMapFiles.getServerTimestamp());
-            mapFiles.setLastCheckTimestamp(savedMapFiles.getLastCheckTimestamp());
-        } else {
-            long timestamp = Consts.BAD_DATETIME;
-
-            if (mapSubDirEquals) {
-                timestamp = getLatestTimestamp(mapFiles.getFileList());
-            }
-
-            if (timestamp == Consts.BAD_DATETIME) {
-                timestamp = mapDirNameToTimestamp(mapFiles.getMapSubDir());
-            }
-
-            mapFiles.setLocalTimestamp(timestamp);
-
-            writeToJSONFile(context, mapFiles);
-        }
     }
 
     public static long getLatestTimestamp(@NonNull List<FileInfo> fileInfoList) {

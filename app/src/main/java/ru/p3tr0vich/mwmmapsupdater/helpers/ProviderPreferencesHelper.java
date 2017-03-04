@@ -101,23 +101,34 @@ public class ProviderPreferencesHelper {
         return queryGetAsString(mPreferencesHelper.keys.parentMapsDir);
     }
 
-//    public void putCheckServerTimestamp(long dateTime) throws RemoteException {
-//        ContentValues contentValues = new ContentValues();
-//        contentValues.put(mPreferencesHelper.keys.checkServerTimestamp, dateTime);
-//
-//        update(contentValues, mPreferencesHelper.keys.checkServerTimestamp);
-//    }
-//
-//    public long getServerMapsTimestamp() throws RemoteException, FormatException {
-//        return queryGetAsLong(mPreferencesHelper.keys.serverMapsTimestamp);
-//    }
-//
-//    public void putServerMapsTimestamp(long date) throws RemoteException {
-//        ContentValues contentValues = new ContentValues();
-//        contentValues.put(mPreferencesHelper.keys.serverMapsTimestamp, date);
-//
-//        update(contentValues, mPreferencesHelper.keys.serverMapsTimestamp);
-//    }
+    public long getLocalMapsTimestamp() throws RemoteException, FormatException {
+        return queryGetAsLong(mPreferencesHelper.keys.localMapsTimestamp);
+    }
+
+    public void putLocalMapsTimestamp(long timestamp) throws RemoteException {
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(mPreferencesHelper.keys.localMapsTimestamp, timestamp);
+
+        update(contentValues, mPreferencesHelper.keys.localMapsTimestamp);
+    }
+
+    public void putCheckServerTimestamp(long timestamp) throws RemoteException {
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(mPreferencesHelper.keys.checkServerTimestamp, timestamp);
+
+        update(contentValues, mPreferencesHelper.keys.checkServerTimestamp);
+    }
+
+    public long getServerMapsTimestamp() throws RemoteException, FormatException {
+        return queryGetAsLong(mPreferencesHelper.keys.serverMapsTimestamp);
+    }
+
+    public void putServerMapsTimestamp(long timestamp) throws RemoteException {
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(mPreferencesHelper.keys.serverMapsTimestamp, timestamp);
+
+        update(contentValues, mPreferencesHelper.keys.serverMapsTimestamp);
+    }
 
     @PreferencesHelper.ActionOnHasUpdates
     public int getActionOnHasUpdates() throws RemoteException, FormatException {

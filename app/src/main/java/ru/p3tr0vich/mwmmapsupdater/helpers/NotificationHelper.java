@@ -81,7 +81,7 @@ public class NotificationHelper {
     }
 
     public void notifyDownloadEnd(long timestamp) {
-        cancel(); // <-- исправление бага Андроид (вертиепльное выравнивание title и text по центру)
+        cancel(); // <-- исправление бага Андроид (вертикальное выравнивание title и text по центру)
 
         mBuilder.setTicker(mContext.getText(R.string.text_notification_download_end_ticker));
         mBuilder.setContentTitle(mContext.getText(R.string.text_notification_download_end_title));
