@@ -8,6 +8,7 @@ import android.content.SyncStatusObserver;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.Loader;
 import android.support.v7.widget.DefaultItemAnimator;
@@ -74,18 +75,22 @@ public class FragmentMain extends FragmentBase implements
 
     private static final int REQUEST_CODE_DIALOG_QUESTION_WIFI_NOT_CONNECTED = 100;
 
+    private long mLocalMapsTimestamp;
+    private long mServerMapsTimestamp;
+    private long mCheckServerTimestamp;
+
+    private int mStartDelayFab;
+
     private ViewGroup mLayoutError;
     private ViewGroup mLayoutMain;
 
     private TextView mTextDateLocal;
     private TextView mTextDateServer;
 
-    private long mLocalMapsTimestamp;
-    private long mServerMapsTimestamp;
-    private long mCheckServerTimestamp;
-
     private ImageView mImgCheckServer;
     private Animation mAnimationCheckServer;
+
+    private FloatingActionButton mFloatingActionButton;
 
     private MapItemRecyclerViewAdapter mMapItemRecyclerViewAdapter;
 
@@ -115,6 +120,8 @@ public class FragmentMain extends FragmentBase implements
         UtilsLog.d(LOG_ENABLED, TAG, "onCreate", "savedInstanceState " + (savedInstanceState == null ? "=" : "!") + "= null");
 
         mAppAccount = new AppAccount(getContext());
+
+        mStartDelayFab = getResources().getInteger(R.integer.animation_start_delay_fab);
 
         initAnimationCheckServer();
 
@@ -155,7 +162,10 @@ public class FragmentMain extends FragmentBase implements
         view.findViewById(R.id.btn_retry_find_maps).setOnClickListener(mBtnRetryFindMapsClickListener);
         view.findViewById(R.id.btn_check_server).setOnClickListener(mBtnCheckServerClickListener);
 
-        view.findViewById(R.id.floating_action_button).setOnClickListener(mBtnCheckServerClickListener);
+        mFloatingActionButton = (FloatingActionButton) view.findViewById(R.id.floating_action_button);
+        mFloatingActionButton.setOnClickListener(mBtnCheckServerClickListener);
+        mFloatingActionButton.setScaleX(0.0f);
+        mFloatingActionButton.setScaleY(0.0f);
 
         mLayoutError.setVisibility(View.GONE);
         mLayoutMain.setVisibility(View.GONE);
@@ -203,10 +213,26 @@ public class FragmentMain extends FragmentBase implements
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+
+        // TODO: 05.03.2017
+//        setFloatingActionButtonVisible(true);
+    }
+
+    @Override
+    public void onPause() {
+//        setFloatingActionButtonVisible(false);
+        super.onPause();
+    }
+
+    @Override
     public void onStop() {
         UtilsLog.d(LOG_ENABLED, TAG, "onStop");
 
         ContentResolver.removeStatusChangeListener(mSyncMonitor);
+
+        setFloatingActionButtonVisible(false);
 
         super.onStop();
     }
@@ -251,6 +277,45 @@ public class FragmentMain extends FragmentBase implements
         mBroadcastReceiverMapFilesLoading = new BroadcastReceiverMapFilesLoading() {
             @Override
             public void onReceive(boolean loading) {
+                if (loading) {
+                    setFloatingActionButtonVisible(false);
+
+                    return;
+                }
+
+                long currentTimestamp = System.currentTimeMillis();
+
+                UtilsLog.d(LOG_ENABLED, TAG, "BroadcastReceiverMapFilesLoading > onReceive",
+                        "mLocalMapsTimestamp == " + mLocalMapsTimestamp +
+                                ", mServerMapsTimestamp == " + mServerMapsTimestamp +
+                                ", mCheckServerTimestamp == " + mCheckServerTimestamp);
+                UtilsLog.d(LOG_ENABLED, TAG, "BroadcastReceiverMapFilesLoading > onReceive",
+                        "currentTimestamp - mCheckServerTimestamp == " + (currentTimestamp - mCheckServerTimestamp));
+
+                if (mLocalMapsTimestamp == Consts.BAD_DATETIME) {
+                    UtilsLog.d(LOG_ENABLED, TAG, "BroadcastReceiverMapFilesLoading > onReceive",
+                            "requestSync, check local files");
+
+                    ContentResolverHelper.requestSync(mAppAccount, ContentResolverHelper.REQUEST_SYNC_CHECK_LOCAL_FILES);
+
+                    return;
+                }
+
+                if (((currentTimestamp - mCheckServerTimestamp) > RECHECK_SERVER_MILLIS) ||
+                        mCheckServerTimestamp == Consts.BAD_DATETIME ||
+                        mServerMapsTimestamp == Consts.BAD_DATETIME) {
+                    UtilsLog.d(LOG_ENABLED, TAG, "BroadcastReceiverMapFilesLoading > onReceive",
+                            "requestSync, check server");
+
+                    ContentResolverHelper.requestSync(mAppAccount, ContentResolverHelper.REQUEST_SYNC_CHECK_SERVER);
+
+                    return;
+                }
+
+                UtilsLog.d(LOG_ENABLED, TAG, "BroadcastReceiverMapFilesLoading > onReceive",
+                        "requestSync no need");
+
+                setFloatingActionButtonVisible(true);
             }
         };
         mBroadcastReceiverMapFilesLoading.register(getContext());
@@ -303,10 +368,10 @@ public class FragmentMain extends FragmentBase implements
 
                     switch (v.getId()) {
                         case R.id.floating_action_button:
-                            if (preferencesHelper.isDownloadOnlyOnWifi() && connectedState != ConnectivityHelper.CONNECTED_WIFI ) {
+                            if (preferencesHelper.isDownloadOnlyOnWifi() && connectedState != ConnectivityHelper.CONNECTED_WIFI) {
                                 FragmentDialogQuestion.show(FragmentMain.this, REQUEST_CODE_DIALOG_QUESTION_WIFI_NOT_CONNECTED,
-                                        null,
-                                        R.string.message_dialog_download_without_wifi, R.string.dialog_btn_load, null);
+                                        R.string.title_download_without_wifi,
+                                        R.string.message_download_without_wifi, R.string.dialog_btn_download, null);
                             } else {
                                 ContentResolverHelper.requestSync(mAppAccount, ContentResolverHelper.REQUEST_SYNC_DOWNLOAD);
                             }
@@ -641,28 +706,6 @@ public class FragmentMain extends FragmentBase implements
                 mLayoutError.setVisibility(View.GONE);
                 mLayoutMain.setVisibility(View.VISIBLE);
 
-                long currentTimestamp = System.currentTimeMillis();
-
-                UtilsLog.d(LOG_ENABLED, TAG, "onLoadFinished", "mLocalMapsTimestamp == " + mLocalMapsTimestamp +
-                        ", mServerMapsTimestamp == " + mServerMapsTimestamp + ", mCheckServerTimestamp == " + mCheckServerTimestamp);
-                UtilsLog.d(LOG_ENABLED, TAG, "onLoadFinished", "currentTimestamp - mCheckServerTimestamp == " + (currentTimestamp - mCheckServerTimestamp));
-
-                if (mLocalMapsTimestamp == Consts.BAD_DATETIME) {
-                    UtilsLog.d(LOG_ENABLED, TAG, "onLoadFinished", "requestSync, check local files");
-
-                    ContentResolverHelper.requestSync(mAppAccount, ContentResolverHelper.REQUEST_SYNC_CHECK_LOCAL_FILES);
-                } else {
-                    if (((currentTimestamp - mCheckServerTimestamp) > RECHECK_SERVER_MILLIS) ||
-                            mCheckServerTimestamp == Consts.BAD_DATETIME ||
-                            mServerMapsTimestamp == Consts.BAD_DATETIME) {
-                        UtilsLog.d(LOG_ENABLED, TAG, "onLoadFinished", "requestSync, check server");
-
-                        ContentResolverHelper.requestSync(mAppAccount, ContentResolverHelper.REQUEST_SYNC_CHECK_SERVER);
-                    } else {
-                        UtilsLog.d(LOG_ENABLED, TAG, "onLoadFinished", "requestSync no need");
-                    }
-                }
-
                 return;
             }
         }
@@ -688,7 +731,11 @@ public class FragmentMain extends FragmentBase implements
     }
 
     private void updateSyncStatus() {
-        if (ContentResolverHelper.isSyncActive(mAppAccount)) {
+        boolean syncActive = ContentResolverHelper.isSyncActive(mAppAccount);
+
+        setFloatingActionButtonVisible(!syncActive);
+
+        if (syncActive) {
             mImgCheckServer.startAnimation(mAnimationCheckServer);
         } else {
             mImgCheckServer.clearAnimation();
@@ -703,5 +750,10 @@ public class FragmentMain extends FragmentBase implements
                 updateSyncStatus();
             }
         });
+    }
+
+    private void setFloatingActionButtonVisible(boolean visible) {
+        final float value = visible ? 1.0f : 0.0f; // TODO
+        mFloatingActionButton.animate().setStartDelay(mStartDelayFab).scaleX(value).scaleY(value);
     }
 }

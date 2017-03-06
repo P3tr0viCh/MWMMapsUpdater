@@ -17,7 +17,7 @@ public class MapFilesLoader extends AsyncTaskLoader<MapFiles> {
 
     private static final String TAG = "MapFilesLoader";
 
-    private static final boolean LOG_ENABLED = true;
+    private static final boolean LOG_ENABLED = false;
 
     private final String mMapDir;
 

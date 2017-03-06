@@ -1,6 +1,8 @@
 <resources>
     <string name="app_name">Обновление карт MAPS.ME</string>
 
+    <string name="title_download_without_wifi">Скачать по мобильной сети?</string>
+
     <string name="text_map_item_date_local">Установленная версия</string>
     <string name="text_map_item_date_server">Версия на сервере</string>
 
@@ -18,7 +20,7 @@
     <string name="text_notification_download_end_title">Карты MAPS.ME загружены</string>
 
     <string name="message_check_server_active">Запрос выполняется…</string>
-    <string name="message_dialog_download_without_wifi">Ая, нет вайфая!11</string>
+    <string name="message_download_without_wifi">Чтобы не платить за передачу данных, используйте Wi-Fi.</string>
     <string name="message_error_no_internet">Отсутствует подключение к Интернет</string>
     <string name="message_error_sync_error_occurred">Во время обновления произошла ошибка</string>
 
@@ -26,5 +28,5 @@
 
     <string name="dialog_btn_ok">OK</string>
     <string name="dialog_btn_cancel">ОТМЕНА</string>
-    <string name="dialog_btn_load">ЗАГРУЗИТЬ</string>
+    <string name="dialog_btn_download">СКАЧАТЬ</string>
 </resources>

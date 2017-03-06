@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <integer name="animation_duration_check_server">600</integer>
+
+    <integer name="animation_start_delay_fab">125</integer>
 </resources>
