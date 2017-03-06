@@ -125,7 +125,7 @@
                         android:layout_height="@dimen/map_progress_btn_size"
                         android:layout_gravity="center_vertical|end"
                         android:scaleType="center"
-                        android:src="@drawable/ic_sync"
+                        android:src="@drawable/ic_loading"
                         tools:ignore="ContentDescription"/>
                 </FrameLayout>
             </LinearLayout>
@@ -152,7 +152,7 @@
             android:layout_marginEnd="@dimen/fab_margin_end"
             android:clickable="true"
             app:fabSize="normal"
-            app:srcCompat="@android:drawable/stat_sys_download_done"
+            android:src="@drawable/ic_sync"
             app:useCompatPadding="true"/>
     </FrameLayout>
 </FrameLayout>

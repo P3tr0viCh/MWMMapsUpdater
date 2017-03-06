@@ -22,7 +22,8 @@
     <string name="message_check_server_active">Запрос выполняется…</string>
     <string name="message_download_without_wifi">Чтобы не платить за передачу данных, используйте Wi-Fi.</string>
     <string name="message_error_no_internet">Отсутствует подключение к Интернет</string>
-    <string name="message_error_sync_error_occurred">Во время обновления произошла ошибка</string>
+    <string name="message_error_sync_error_occurred_other">Во время обновления произошла ошибка</string>
+    <string name="message_error_sync_error_occurred_internet">Во время обновления произошла ошибка сети</string>
 
     <string name="btn_retry_find_maps">Повторить поиск</string>
 

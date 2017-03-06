@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SyncStatusObserver;
 import android.os.Bundle;
+import android.os.Handler;
+import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
@@ -33,6 +35,8 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -41,7 +45,9 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import ru.p3tr0vich.mwmmapsupdater.adapters.MapItemRecyclerViewAdapter;
+import ru.p3tr0vich.mwmmapsupdater.adapters.SyncAdapter;
 import ru.p3tr0vich.mwmmapsupdater.broadcastreceivers.BroadcastReceiverMapFilesLoading;
+import ru.p3tr0vich.mwmmapsupdater.exceptions.ImplementException;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ConnectivityHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ContentResolverHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.NotificationHelper;
@@ -80,6 +86,18 @@ public class FragmentMain extends FragmentBase implements
     private long mCheckServerTimestamp;
 
     private int mStartDelayFab;
+
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({BUTTON_ACTION_CANCEL, BUTTON_ACTION_CHECK_SERVER, BUTTON_ACTION_DOWNLOAD})
+    public @interface ButtonAction {
+    }
+
+    public static final int BUTTON_ACTION_CANCEL = 0;
+    public static final int BUTTON_ACTION_CHECK_SERVER = 1;
+    public static final int BUTTON_ACTION_DOWNLOAD = 2;
+
+    @ButtonAction
+    private int mButtonAction;
 
     private ViewGroup mLayoutError;
     private ViewGroup mLayoutMain;
@@ -145,6 +163,7 @@ public class FragmentMain extends FragmentBase implements
         mTextDateServer = (TextView) view.findViewById(R.id.text_date_server);
 
         mImgCheckServer = (ImageView) view.findViewById(R.id.image_check_server);
+        mImgCheckServer.setVisibility(View.INVISIBLE);
 
         Context context = view.getContext();
 
@@ -163,7 +182,7 @@ public class FragmentMain extends FragmentBase implements
         view.findViewById(R.id.btn_check_server).setOnClickListener(mBtnCheckServerClickListener);
 
         mFloatingActionButton = (FloatingActionButton) view.findViewById(R.id.floating_action_button);
-        mFloatingActionButton.setOnClickListener(mBtnCheckServerClickListener);
+        mFloatingActionButton.setOnClickListener(mFloatingActionButtonClickListener);
         mFloatingActionButton.setScaleX(0.0f);
         mFloatingActionButton.setScaleY(0.0f);
 
@@ -215,14 +234,12 @@ public class FragmentMain extends FragmentBase implements
     @Override
     public void onResume() {
         super.onResume();
-
-        // TODO: 05.03.2017
-//        setFloatingActionButtonVisible(true);
+        setFloatingActionButtonVisible(true);
     }
 
     @Override
     public void onPause() {
-//        setFloatingActionButtonVisible(false);
+        setFloatingActionButtonVisible(false);
         super.onPause();
     }
 
@@ -231,8 +248,6 @@ public class FragmentMain extends FragmentBase implements
         UtilsLog.d(LOG_ENABLED, TAG, "onStop");
 
         ContentResolver.removeStatusChangeListener(mSyncMonitor);
-
-        setFloatingActionButtonVisible(false);
 
         super.onStop();
     }
@@ -254,6 +269,8 @@ public class FragmentMain extends FragmentBase implements
 
     @Override
     public void onDestroy() {
+        mHandler.removeCallbacks(mStatusChangedRunnable);
+
         mSyncProgressObserver.unregister(getContext());
 
         mBroadcastReceiverMapFilesLoading.unregister(getContext());
@@ -278,8 +295,6 @@ public class FragmentMain extends FragmentBase implements
             @Override
             public void onReceive(boolean loading) {
                 if (loading) {
-                    setFloatingActionButtonVisible(false);
-
                     return;
                 }
 
@@ -314,8 +329,6 @@ public class FragmentMain extends FragmentBase implements
 
                 UtilsLog.d(LOG_ENABLED, TAG, "BroadcastReceiverMapFilesLoading > onReceive",
                         "requestSync no need");
-
-                setFloatingActionButtonVisible(true);
             }
         };
         mBroadcastReceiverMapFilesLoading.register(getContext());
@@ -341,11 +354,33 @@ public class FragmentMain extends FragmentBase implements
             }
 
             @Override
-            public void onErrorOccurred() {
-                Utils.toast(getContext(), R.string.message_error_sync_error_occurred);
+            public void onErrorOccurred(int error) {
+                switch (error) {
+                    case SyncAdapter.SYNC_ERROR_OTHER:
+                        Utils.toast(getContext(), R.string.message_error_sync_error_occurred_other);
+                        break;
+                    case SyncAdapter.SYNC_ERROR_INTERNET:
+                        Utils.toast(getContext(), R.string.message_error_sync_error_occurred_internet);
+                        break;
+                }
             }
         };
         mSyncProgressObserver.register(getContext());
+    }
+
+    @ConnectivityHelper.ConnectedState
+    private int getConnectedState() {
+        int connectedState = ConnectivityHelper.getConnectedState(getContext());
+
+        if (BuildConfig.DEBUG) {
+            if (connectedState == ConnectivityHelper.CONNECTED) {
+                if (DEBUG_WIFI_CONNECTED) {
+                    connectedState = ConnectivityHelper.CONNECTED_WIFI;
+                }
+            }
+        }
+
+        return connectedState;
     }
 
     private final View.OnClickListener mBtnCheckServerClickListener = new View.OnClickListener() {
@@ -354,38 +389,48 @@ public class FragmentMain extends FragmentBase implements
             if (ContentResolverHelper.isSyncActive(mAppAccount)) {
                 Utils.toast(getContext(), R.string.message_check_server_active);
             } else {
-                @ConnectivityHelper.ConnectedState
-                int connectedState = ConnectivityHelper.getConnectedState(getContext());
-
-                if (connectedState != ConnectivityHelper.DISCONNECTED) {
-                    if (BuildConfig.DEBUG) {
-                        if (connectedState == ConnectivityHelper.CONNECTED) {
-                            if (DEBUG_WIFI_CONNECTED) {
-                                connectedState = ConnectivityHelper.CONNECTED_WIFI;
-                            }
-                        }
-                    }
-
-                    switch (v.getId()) {
-                        case R.id.floating_action_button:
-                            if (preferencesHelper.isDownloadOnlyOnWifi() && connectedState != ConnectivityHelper.CONNECTED_WIFI) {
-                                FragmentDialogQuestion.show(FragmentMain.this, REQUEST_CODE_DIALOG_QUESTION_WIFI_NOT_CONNECTED,
-                                        R.string.title_download_without_wifi,
-                                        R.string.message_download_without_wifi, R.string.dialog_btn_download, null);
-                            } else {
-                                ContentResolverHelper.requestSync(mAppAccount, ContentResolverHelper.REQUEST_SYNC_DOWNLOAD);
-                            }
-
-                            break;
-                        default:
-                        case R.id.btn_check_server:
-                            ContentResolverHelper.requestSync(mAppAccount, ContentResolverHelper.REQUEST_SYNC_CHECK_SERVER);
-
-                            break;
-                    }
+                if (getConnectedState() != ConnectivityHelper.DISCONNECTED) {
+                    ContentResolverHelper.requestSync(mAppAccount, ContentResolverHelper.REQUEST_SYNC_CHECK_SERVER);
                 } else {
                     Utils.toast(getContext(), R.string.message_error_no_internet);
                 }
+            }
+        }
+    };
+
+    private final View.OnClickListener mFloatingActionButtonClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            switch (mButtonAction) {
+                case BUTTON_ACTION_CANCEL:
+                    ContentResolverHelper.cancelSync(mAppAccount);
+
+                    break;
+                case BUTTON_ACTION_CHECK_SERVER:
+                    if (getConnectedState() != ConnectivityHelper.DISCONNECTED) {
+                        ContentResolverHelper.requestSync(mAppAccount, ContentResolverHelper.REQUEST_SYNC_CHECK_SERVER);
+                    } else {
+                        Utils.toast(getContext(), R.string.message_error_no_internet);
+                    }
+
+                    break;
+                case BUTTON_ACTION_DOWNLOAD:
+                    int connectedState = getConnectedState();
+
+                    if (connectedState != ConnectivityHelper.DISCONNECTED) {
+                        if (preferencesHelper.isDownloadOnlyOnWifi() && connectedState != ConnectivityHelper.CONNECTED_WIFI) {
+                            FragmentDialogQuestion.show(FragmentMain.this, REQUEST_CODE_DIALOG_QUESTION_WIFI_NOT_CONNECTED,
+                                    R.string.title_download_without_wifi,
+                                    R.string.message_download_without_wifi, R.string.dialog_btn_download, null);
+                        } else {
+                            ContentResolverHelper.requestSync(mAppAccount, ContentResolverHelper.REQUEST_SYNC_DOWNLOAD);
+                        }
+                        break;
+                    } else {
+                        Utils.toast(getContext(), R.string.message_error_no_internet);
+                    }
+
+                    break;
             }
         }
     };
@@ -733,27 +778,46 @@ public class FragmentMain extends FragmentBase implements
     private void updateSyncStatus() {
         boolean syncActive = ContentResolverHelper.isSyncActive(mAppAccount);
 
-        setFloatingActionButtonVisible(!syncActive);
+        mImgCheckServer.setVisibility(syncActive ? View.VISIBLE : View.INVISIBLE);
 
         if (syncActive) {
+            mButtonAction = BUTTON_ACTION_CANCEL;
+
             mImgCheckServer.startAnimation(mAnimationCheckServer);
+
+            mFloatingActionButton.setImageResource(R.drawable.ic_stop);
         } else {
             mImgCheckServer.clearAnimation();
+
+            if (mLocalMapsTimestamp == Consts.BAD_DATETIME || mServerMapsTimestamp == Consts.BAD_DATETIME) {
+                mButtonAction = BUTTON_ACTION_CHECK_SERVER;
+
+                mFloatingActionButton.setImageResource(R.drawable.ic_sync);
+            } else {
+                mButtonAction = BUTTON_ACTION_DOWNLOAD;
+
+                mFloatingActionButton.setImageResource(R.drawable.ic_download);
+            }
         }
     }
 
+    private final Runnable mStatusChangedRunnable = new Runnable() {
+        @Override
+        public void run() {
+            updateSyncStatus();
+        }
+    };
+
+    private final Handler mHandler = new Handler();
+
     @Override
     public void onStatusChanged(int which) {
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                updateSyncStatus();
-            }
-        });
+        mHandler.removeCallbacks(mStatusChangedRunnable);
+        mHandler.post(mStatusChangedRunnable);
     }
 
     private void setFloatingActionButtonVisible(boolean visible) {
-        final float value = visible ? 1.0f : 0.0f; // TODO
+        final float value = visible ? 1.0f : 0.0f;
         mFloatingActionButton.animate().setStartDelay(mStartDelayFab).scaleX(value).scaleY(value);
     }
 }

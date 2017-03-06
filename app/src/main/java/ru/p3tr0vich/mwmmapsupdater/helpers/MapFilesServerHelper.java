@@ -22,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 
 import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
 import ru.p3tr0vich.mwmmapsupdater.Consts;
+import ru.p3tr0vich.mwmmapsupdater.exceptions.CancelledException;
+import ru.p3tr0vich.mwmmapsupdater.exceptions.InternetException;
 import ru.p3tr0vich.mwmmapsupdater.models.FileInfo;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsFiles;
@@ -49,6 +51,10 @@ public class MapFilesServerHelper {
     private static final int DEFAULT_CONNECT_TIMEOUT = (int) TimeUnit.SECONDS.toMillis(10);
 
     private MapFilesServerHelper() {
+    }
+
+    public interface OnCancelled {
+        void checkCancelled() throws CancelledException;
     }
 
     public interface OnDownloadProgress {
@@ -90,7 +96,7 @@ public class MapFilesServerHelper {
     }
 
     @Nullable
-    private static FileInfo getFileInfo(@NonNull String mapName) throws IOException {
+    private static FileInfo getFileInfo(@NonNull String mapName) throws InternetException {
         if (BuildConfig.DEBUG && DEBUG_FILE_INFO_WAIT_ENABLED) {
             try {
                 TimeUnit.SECONDS.sleep(1);
@@ -108,12 +114,17 @@ public class MapFilesServerHelper {
         } else {
             URL url = getUrl(mapName);
 
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            HttpURLConnection connection;
+            try {
+                connection = (HttpURLConnection) url.openConnection();
 
-            connection.setRequestMethod("HEAD");
-            connection.setConnectTimeout(DEFAULT_CONNECT_TIMEOUT);
+                connection.setRequestMethod("HEAD");
+                connection.setConnectTimeout(DEFAULT_CONNECT_TIMEOUT);
 
-            connection.connect();
+                connection.connect();
+            } catch (IOException e) {
+                throw new InternetException(e.getMessage());
+            }
 
             lastModified = connection.getLastModified();
 
@@ -129,7 +140,7 @@ public class MapFilesServerHelper {
     }
 
     @NonNull
-    private static List<FileInfo> getFileInfoList(@NonNull List<String> mapNames) throws IOException {
+    private static List<FileInfo> getFileInfoList(@NonNull List<String> mapNames) throws InternetException {
         List<FileInfo> fileInfoList = new ArrayList<>();
 
         UtilsLog.d(LOG_ENABLED, TAG, "getFileInfoList", "start");
@@ -149,7 +160,7 @@ public class MapFilesServerHelper {
         return fileInfoList;
     }
 
-    public static long getServerFilesTimestamp(@NonNull MapFiles mapFiles) throws IOException {
+    public static long getServerFilesTimestamp(@NonNull MapFiles mapFiles) throws InternetException {
         if (BuildConfig.DEBUG && DEBUG_RETURN_CURRENT_DATE) {
             Calendar calendar = Calendar.getInstance();
 
@@ -182,12 +193,24 @@ public class MapFilesServerHelper {
         return MapFilesHelper.getLatestTimestamp(fileInfoList);
     }
 
-    private static void download(@NonNull String mapName, @NonNull OnDownloadProgress onDownloadProgress) throws IOException {
+    private static int inputRead(InputStream input, byte b[]) throws InternetException {
+        try {
+            return input.read(b);
+        } catch (IOException e) {
+            throw new InternetException(e.getMessage());
+        }
+    }
+
+    private static void outputWrite(OutputStream output, byte data[], int len) throws IOException {
+        output.write(data, 0, len);
+    }
+
+    private static void download(@NonNull String mapName, @NonNull OnCancelled onCancelled, @NonNull OnDownloadProgress onDownloadProgress) throws IOException, CancelledException {
         UtilsLog.d(LOG_ENABLED, TAG, "download", "start, mapName == " + mapName);
 
         long fileLength;
 
-        int read;
+        int length;
 
         long total = 0;
 
@@ -202,9 +225,11 @@ public class MapFilesServerHelper {
                 UtilsLog.d(LOG_ENABLED, TAG, "download", "fileLength == " + fileLength);
 
                 do {
-                    read = 10 + random.nextInt(90);
+                    onCancelled.checkCancelled();
 
-                    total += read;
+                    length = 10 + random.nextInt(90);
+
+                    total += length;
 
                     progress = (int) (total * 100 / fileLength);
 
@@ -220,7 +245,7 @@ public class MapFilesServerHelper {
 
                     if (DEBUG_DUMMY_DOWNLOAD_LOG_PROGRESS) {
                         UtilsLog.d(LOG_ENABLED, TAG, "download",
-                                "read == " + read + ", total == " + total + ", progress == " + progress);
+                                "length == " + length + ", total == " + total + ", progress == " + progress);
                     }
 
                     onDownloadProgress.onProgress(progress);
@@ -231,17 +256,25 @@ public class MapFilesServerHelper {
 
             URL url = getUrl(mapName);
 
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            HttpURLConnection connection;
 
-            connection.setConnectTimeout(DEFAULT_CONNECT_TIMEOUT);
+            InputStream input;
 
-            connection.connect();
+            try {
+                connection = (HttpURLConnection) url.openConnection();
 
-            fileLength = connection.getContentLength();
+                connection.setConnectTimeout(DEFAULT_CONNECT_TIMEOUT);
 
-            UtilsLog.d(LOG_ENABLED, TAG, "download", "fileLength == " + fileLength);
+                connection.connect();
 
-            InputStream input = new BufferedInputStream(connection.getInputStream());
+                fileLength = connection.getContentLength();
+
+                UtilsLog.d(LOG_ENABLED, TAG, "download", "fileLength == " + fileLength);
+
+                input = new BufferedInputStream(connection.getInputStream());
+            } catch (IOException e) {
+                throw new InternetException(e.getMessage());
+            }
 
             File file = getDownloadFile(mapName);
 
@@ -251,14 +284,16 @@ public class MapFilesServerHelper {
 
             byte data[] = new byte[1024];
 
-            while ((read = input.read(data)) != -1) {
-                total += read;
+            while ((length = inputRead(input, data)) != -1) {
+                onCancelled.checkCancelled();
+
+                total += length;
 
                 progress = (int) (total * 100 / fileLength);
 
                 onDownloadProgress.onProgress(progress);
 
-                output.write(data, 0, read);
+                outputWrite(output, data, length);
             }
 
             output.flush();
@@ -277,7 +312,7 @@ public class MapFilesServerHelper {
         }
     }
 
-    public static void downloadMaps(@NonNull MapFiles mapFiles, @NonNull OnDownloadProgress onDownloadProgress) throws IOException {
+    public static void downloadMaps(@NonNull MapFiles mapFiles, @NonNull OnCancelled onCancelled, @NonNull OnDownloadProgress onDownloadProgress) throws IOException, CancelledException {
         UtilsLog.d(LOG_ENABLED, TAG, "downloadMaps", "map count == " + mapFiles.getFileList().size());
 
         File downloadDir = getDownloadDir();
@@ -291,9 +326,11 @@ public class MapFilesServerHelper {
         for (FileInfo fileInfo : mapFiles.getFileList()) {
             String mapName = fileInfo.getMapName();
 
+            onCancelled.checkCancelled();
+
             onDownloadProgress.onMapStart(mapName);
 
-            download(mapName, onDownloadProgress);
+            download(mapName, onCancelled, onDownloadProgress);
         }
 
         onDownloadProgress.onEnd();

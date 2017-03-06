@@ -9,16 +9,21 @@ import android.content.SyncResult;
 import android.nfc.FormatException;
 import android.os.Bundle;
 import android.os.RemoteException;
+import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.concurrent.TimeUnit;
 
 import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
+import ru.p3tr0vich.mwmmapsupdater.exceptions.CancelledException;
 import ru.p3tr0vich.mwmmapsupdater.Consts;
+import ru.p3tr0vich.mwmmapsupdater.exceptions.InternetException;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ConnectivityHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ContentResolverHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesHelper;
@@ -47,12 +52,23 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
     private MapFiles mMapFiles;
 
+    private boolean mSyncCancelled;
+
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({SYNC_ERROR_OTHER, SYNC_ERROR_CANCELLED, SYNC_ERROR_INTERNET})
+    public @interface SyncError {
+    }
+
+    public static final int SYNC_ERROR_OTHER = 0;
+    public static final int SYNC_ERROR_CANCELLED = 1;
+    public static final int SYNC_ERROR_INTERNET = 2;
+
     public SyncAdapter(Context context) {
         super(context, true);
     }
 
     @ConnectivityHelper.ConnectedState
-    private int updateConnectedState() throws IOException {
+    private int updateConnectedState() throws InternetException {
         int connectedState = ConnectivityHelper.getConnectedState(getContext());
 
         UtilsLog.d(LOG_ENABLED, TAG, "updateConnectedState", "mConnectedState == " +
@@ -62,10 +78,10 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                                         connectedState == ConnectivityHelper.DISCONNECTED ? "DISCONNECTED" : "?"));
 
         if (connectedState == ConnectivityHelper.CONNECTED_ROAMING) {
-            throw new IOException("connectedState == CONNECTED_ROAMING");
+            throw new InternetException("connectedState == CONNECTED_ROAMING");
         } else {
             if (connectedState == ConnectivityHelper.DISCONNECTED)
-                throw new IOException("connectedState == DISCONNECTED");
+                throw new InternetException("connectedState == DISCONNECTED");
         }
 
         return connectedState;
@@ -74,6 +90,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
     @Override
     public void onPerformSync(Account account, Bundle extras, String authority, ContentProviderClient provider, SyncResult syncResult) {
         UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "start");
+
+        mSyncCancelled = false;
 
         boolean manualStart =
                 extras.getBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, false) &&
@@ -122,6 +140,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
             String parentMapsDir = mProviderPreferencesHelper.getParentMapsDir();
 
             mMapFiles = MapFilesHelper.find(parentMapsDir);
+
 
             final long localMapsTimestamp = getLocalMapsTimestamp();
 
@@ -190,10 +209,6 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
             serverChecked();
         } catch (Exception e) {
-            mNotificationHelper.cancel();
-
-            SyncProgressObserver.notifyErrorOccurred(getContext());
-
             handleException(e, syncResult);
         } finally {
             UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "finish" +
@@ -207,13 +222,29 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         }
     }
 
-    private static void handleException(Exception e, SyncResult syncResult) {
+    private void handleException(Exception e, SyncResult syncResult) {
+        mNotificationHelper.cancel();
+
+        @SyncError
+        int error = SYNC_ERROR_OTHER;
+
         if (e instanceof RemoteException) syncResult.databaseError = true;
+        else if (e instanceof InternetException) {
+            syncResult.stats.numIoExceptions++;
+            error = SYNC_ERROR_INTERNET;
+        }
         else if (e instanceof IOException) syncResult.stats.numIoExceptions++;
         else if (e instanceof FormatException) syncResult.stats.numParseExceptions++;
+        else if (e instanceof CancelledException) {
+            syncResult.stats.numIoExceptions++;
+            error = SYNC_ERROR_CANCELLED;
+        }
+        else if (e instanceof InterruptedException) syncResult.stats.numIoExceptions++;
         else syncResult.databaseError = true;
 
         UtilsLog.e(TAG, "handleException", e);
+
+        SyncProgressObserver.notifyErrorOccurred(getContext(), error);
     }
 
     private void init(ContentProviderClient provider) {
@@ -273,7 +304,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         return timestamp;
     }
 
-    private long getServerMapsTimestamp() throws IOException, RemoteException {
+    private long getServerMapsTimestamp() throws InternetException, RemoteException {
         long timestamp = MapFilesServerHelper.getServerFilesTimestamp(mMapFiles);
 
         UtilsLog.d(LOG_ENABLED, TAG, "getServerMapsTimestamp", "server maps date == " + UtilsLog.formatDate(timestamp));
@@ -283,7 +314,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         SyncProgressObserver.notifyServerMapsChecked(getContext(), timestamp);
 
         if (timestamp == Consts.BAD_DATETIME) {
-            throw new IOException("server maps timestamp == BAD_DATETIME");
+            throw new InternetException("server maps timestamp == BAD_DATETIME");
         }
 
         return timestamp;
@@ -321,38 +352,55 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         return true;
     }
 
-    private void download(final long serverFilesTimestamp) throws IOException, RemoteException, FormatException {
-        MapFilesServerHelper.downloadMaps(mMapFiles, new MapFilesServerHelper.OnDownloadProgress() {
+    private void download(final long serverFilesTimestamp) throws IOException, RemoteException, FormatException, CancelledException {
+        MapFilesServerHelper.downloadMaps(mMapFiles,
+                new MapFilesServerHelper.OnCancelled() {
+                    @Override
+                    public void checkCancelled() throws CancelledException {
+                        if (mSyncCancelled) {
+                            throw new CancelledException();
+                        }
+                    }
+                },
+                new MapFilesServerHelper.OnDownloadProgress() {
 
-            private final JSONObject namesAndDescriptions = Utils.getMapNamesAndDescriptions(getContext());
+                    private final JSONObject namesAndDescriptions = Utils.getMapNamesAndDescriptions(getContext());
 
-            @Override
-            public void onStart() {
-                mNotificationHelper.notifyDownloadStart();
-            }
+                    @Override
+                    public void onStart() {
+                        mNotificationHelper.notifyDownloadStart();
+                    }
 
-            @Override
-            public void onMapStart(@NonNull String mapName) {
-                String name = mapName;
+                    @Override
+                    public void onMapStart(@NonNull String mapName) {
+                        String name = mapName;
 
-                try {
-                    name = namesAndDescriptions.getString(name);
-                } catch (JSONException e) {
-                    UtilsLog.e(TAG, "download > OnDownloadProgress > onMapStart", e);
-                }
+                        try {
+                            name = namesAndDescriptions.getString(name);
+                        } catch (JSONException e) {
+                            UtilsLog.e(TAG, "download > OnDownloadProgress > onMapStart", e);
+                        }
 
-                mNotificationHelper.notifyDownloadMapStart(name);
-            }
+                        mNotificationHelper.notifyDownloadMapStart(name);
+                    }
 
-            @Override
-            public void onProgress(int progress) {
-                mNotificationHelper.notifyDownloadProgress(progress);
-            }
+                    @Override
+                    public void onProgress(int progress) {
+                        mNotificationHelper.notifyDownloadProgress(progress);
+                    }
 
-            @Override
-            public void onEnd() {
-                mNotificationHelper.notifyDownloadEnd(serverFilesTimestamp);
-            }
-        });
+                    @Override
+                    public void onEnd() {
+                        mNotificationHelper.notifyDownloadEnd(serverFilesTimestamp);
+                    }
+                });
+    }
+
+    @Override
+    public void onSyncCanceled() {
+        super.onSyncCanceled();
+
+        mSyncCancelled = true;
+        UtilsLog.d(LOG_ENABLED, TAG, "onSyncCanceled");
     }
 }

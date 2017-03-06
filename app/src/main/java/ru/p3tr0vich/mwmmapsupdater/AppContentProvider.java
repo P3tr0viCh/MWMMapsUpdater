@@ -47,6 +47,7 @@ public class AppContentProvider extends ContentProvider {
         String SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP_ITEM = SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP + "/*";
 
         String SYNC_PROGRESS_ERROR_OCCURRED = SYNC_PROGRESS + "/error_occurred";
+        String SYNC_PROGRESS_ERROR_OCCURRED_ITEM = SYNC_PROGRESS_ERROR_OCCURRED + "/*";
 
         String PREFERENCES = "preferences";
         String PREFERENCES_ITEM = PREFERENCES + "/*";
@@ -68,7 +69,7 @@ public class AppContentProvider extends ContentProvider {
         int SYNC_PROGRESS_LOCAL_MAPS_CHECKED_ITEM = 20;
         int SYNC_PROGRESS_SERVER_MAPS_CHECKED_ITEM = 21;
         int SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP_ITEM = 22;
-        int SYNC_PROGRESS_ERROR_OCCURRED = 23;
+        int SYNC_PROGRESS_ERROR_OCCURRED_ITEM = 23;
 
         int PREFERENCES = 30;
         int PREFERENCES_ITEM = 31;
@@ -83,8 +84,8 @@ public class AppContentProvider extends ContentProvider {
                 UriMatchResult.SYNC_PROGRESS_SERVER_MAPS_CHECKED_ITEM);
         sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP_ITEM,
                 UriMatchResult.SYNC_PROGRESS_CHECK_SERVER_TIMESTAMP_ITEM);
-        sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.SYNC_PROGRESS_ERROR_OCCURRED,
-                UriMatchResult.SYNC_PROGRESS_ERROR_OCCURRED);
+        sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.SYNC_PROGRESS_ERROR_OCCURRED_ITEM,
+                UriMatchResult.SYNC_PROGRESS_ERROR_OCCURRED_ITEM);
 
         sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.PREFERENCES, UriMatchResult.PREFERENCES);
         sURIMatcher.addURI(BaseUri.AUTHORITY, UriPath.PREFERENCES_ITEM, UriMatchResult.PREFERENCES_ITEM);

@@ -71,6 +71,10 @@ public class ContentResolverHelper {
         requestSync(appAccount, Bundle.EMPTY);
     }
 
+    public static void cancelSync(@NonNull AppAccount appAccount) {
+        ContentResolver.cancelSync(appAccount.getAccount(), appAccount.getAuthority());
+    }
+
     public static boolean isSyncActive(@NonNull AppAccount appAccount) {
         return ContentResolver.isSyncActive(appAccount.getAccount(), appAccount.getAuthority());
     }
