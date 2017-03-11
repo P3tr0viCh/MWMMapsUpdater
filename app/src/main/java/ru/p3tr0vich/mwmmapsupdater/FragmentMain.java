@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.SyncStatusObserver;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.DrawableRes;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -50,6 +51,7 @@ import ru.p3tr0vich.mwmmapsupdater.broadcastreceivers.BroadcastReceiverMapFilesL
 import ru.p3tr0vich.mwmmapsupdater.exceptions.ImplementException;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ConnectivityHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ContentResolverHelper;
+import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.NotificationHelper;
 import ru.p3tr0vich.mwmmapsupdater.models.FileInfo;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
@@ -68,7 +70,7 @@ public class FragmentMain extends FragmentBase implements
 
     private static final boolean LOG_ENABLED = true;
 
-    private static final boolean DEBUG_WIFI_CONNECTED = false;
+    private static final boolean DEBUG_WIFI_CONNECTED = true;
 
     private static final int MAP_FILES_LOADER_ID = 0;
 
@@ -88,13 +90,14 @@ public class FragmentMain extends FragmentBase implements
     private int mStartDelayFab;
 
     @Retention(RetentionPolicy.SOURCE)
-    @IntDef({BUTTON_ACTION_CANCEL, BUTTON_ACTION_CHECK_SERVER, BUTTON_ACTION_DOWNLOAD})
+    @IntDef({BUTTON_ACTION_CANCEL, BUTTON_ACTION_CHECK_SERVER, BUTTON_ACTION_DOWNLOAD, BUTTON_ACTION_INSTALL})
     public @interface ButtonAction {
     }
 
     public static final int BUTTON_ACTION_CANCEL = 0;
     public static final int BUTTON_ACTION_CHECK_SERVER = 1;
     public static final int BUTTON_ACTION_DOWNLOAD = 2;
+    public static final int BUTTON_ACTION_INSTALL = 3;
 
     @ButtonAction
     private int mButtonAction;
@@ -431,6 +434,10 @@ public class FragmentMain extends FragmentBase implements
                     }
 
                     break;
+                case FragmentMain.BUTTON_ACTION_INSTALL:
+                    ContentResolverHelper.requestSync(mAppAccount, ContentResolverHelper.REQUEST_SYNC_INSTALL);
+
+                    break;
             }
         }
     };
@@ -693,6 +700,12 @@ public class FragmentMain extends FragmentBase implements
                 }
 
                 break;
+            case R.id.action_main_clear_downloaded_maps_dir:
+                File downloadDir = MapFilesHelper.getDownloadDir();
+
+                UtilsFiles.recursiveDeleteInDirectory(downloadDir);
+
+                break;
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -775,28 +788,71 @@ public class FragmentMain extends FragmentBase implements
         mMapItemRecyclerViewAdapter.swapItems(null);
     }
 
+    private void updateButtonAction(@ButtonAction int buttonAction) {
+        mButtonAction = buttonAction;
+
+        @DrawableRes
+        int resId = 0;
+        switch (buttonAction) {
+            case BUTTON_ACTION_CANCEL:
+                resId = R.drawable.ic_stop;
+                break;
+            case BUTTON_ACTION_CHECK_SERVER:
+                resId = R.drawable.ic_sync;
+                break;
+            case BUTTON_ACTION_DOWNLOAD:
+                resId = R.drawable.ic_download;
+                break;
+            case BUTTON_ACTION_INSTALL:
+                resId = R.drawable.ic_folder_move;
+                break;
+        }
+
+        mFloatingActionButton.setImageResource(resId);
+    }
+
+    private boolean hasDownloadedMaps() {
+        File downloadDir = MapFilesHelper.getDownloadDir();
+
+        if (!downloadDir.exists() || !downloadDir.isDirectory()){
+            UtilsLog.d(LOG_ENABLED, TAG, "hasDownloadedMaps", "Downloaded maps directory not exists or not directory");
+            return false;
+        }
+
+        File[] listFiles = downloadDir.listFiles();
+
+        if (listFiles == null || listFiles.length == 0) {
+            UtilsLog.d(LOG_ENABLED, TAG, "hasDownloadedMaps", "Downloaded maps directory empty");
+
+            return false;
+        }
+
+        UtilsLog.d(LOG_ENABLED, TAG, "hasDownloadedMaps", "return true");
+
+        return true;
+    }
+
     private void updateSyncStatus() {
         boolean syncActive = ContentResolverHelper.isSyncActive(mAppAccount);
 
         mImgCheckServer.setVisibility(syncActive ? View.VISIBLE : View.INVISIBLE);
 
         if (syncActive) {
-            mButtonAction = BUTTON_ACTION_CANCEL;
-
             mImgCheckServer.startAnimation(mAnimationCheckServer);
 
-            mFloatingActionButton.setImageResource(R.drawable.ic_stop);
+            updateButtonAction(BUTTON_ACTION_CANCEL);
         } else {
             mImgCheckServer.clearAnimation();
 
-            if (mLocalMapsTimestamp == Consts.BAD_DATETIME || mServerMapsTimestamp == Consts.BAD_DATETIME) {
-                mButtonAction = BUTTON_ACTION_CHECK_SERVER;
-
-                mFloatingActionButton.setImageResource(R.drawable.ic_sync);
+            if (mLocalMapsTimestamp == Consts.BAD_DATETIME || mServerMapsTimestamp == Consts.BAD_DATETIME ||
+                    mLocalMapsTimestamp >= mServerMapsTimestamp) {
+                updateButtonAction(BUTTON_ACTION_CHECK_SERVER);
             } else {
-                mButtonAction = BUTTON_ACTION_DOWNLOAD;
-
-                mFloatingActionButton.setImageResource(R.drawable.ic_download);
+                if (hasDownloadedMaps()) {
+                    updateButtonAction(BUTTON_ACTION_INSTALL);
+                } else {
+                    updateButtonAction(BUTTON_ACTION_DOWNLOAD);
+                }
             }
         }
     }

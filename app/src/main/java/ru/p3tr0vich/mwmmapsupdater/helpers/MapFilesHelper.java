@@ -1,6 +1,7 @@
 package ru.p3tr0vich.mwmmapsupdater.helpers;
 
 import android.content.Context;
+import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
@@ -55,6 +56,8 @@ public class MapFilesHelper {
 
     private static final String MAPS_INFO_FILE_NAME = "maps_info.json";
 
+    private static final String DOWNLOAD_SUB_DIR_NAME = "MAPS.ME maps";
+
     private interface JsonFields {
         String MAP_SUB_DIR = "directory";
 
@@ -70,6 +73,12 @@ public class MapFilesHelper {
     @NonNull
     private static File getMapsInfoFile(@NonNull Context context) {
         return new File(context.getFilesDir(), MAPS_INFO_FILE_NAME);
+    }
+
+    @NonNull
+    public static File getDownloadDir() {
+        return new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                DOWNLOAD_SUB_DIR_NAME);
     }
 
     public static boolean readFromJSONFile(@NonNull Context context, @NonNull MapFiles mapFiles) {

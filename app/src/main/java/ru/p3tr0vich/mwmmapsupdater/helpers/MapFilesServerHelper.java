@@ -1,6 +1,5 @@
 package ru.p3tr0vich.mwmmapsupdater.helpers;
 
-import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
@@ -46,8 +45,6 @@ public class MapFilesServerHelper {
     private static final String HOST = "direct.mapswithme.com";
     private static final String PATH = "regular/daily";
 
-    private static final String DOWNLOAD_SUB_DIR_NAME = "MAPS.ME maps";
-
     private static final int DEFAULT_CONNECT_TIMEOUT = (int) TimeUnit.SECONDS.toMillis(10);
 
     private MapFilesServerHelper() {
@@ -86,13 +83,8 @@ public class MapFilesServerHelper {
     }
 
     @NonNull
-    private static File getDownloadDir() {
-        return new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), DOWNLOAD_SUB_DIR_NAME);
-    }
-
-    @NonNull
     private static File getDownloadFile(@NonNull String mapName) {
-        return new File(getDownloadDir(), mapName + Consts.MAP_FILE_NAME_EXT);
+        return new File(MapFilesHelper.getDownloadDir(), mapName + Consts.MAP_FILE_NAME_EXT);
     }
 
     @Nullable
@@ -217,6 +209,8 @@ public class MapFilesServerHelper {
         int progress;
 
         try {
+            File file = getDownloadFile(mapName);
+
             if (BuildConfig.DEBUG && DEBUG_DUMMY_DOWNLOAD) {
                 Random random = new Random();
 
@@ -251,8 +245,10 @@ public class MapFilesServerHelper {
                     onDownloadProgress.onProgress(progress);
                 } while (total <= fileLength);
 
+                UtilsFiles.createFile(file);
+
                 return;
-            }
+            } // DEBUG_DUMMY_DOWNLOAD end
 
             URL url = getUrl(mapName);
 
@@ -275,8 +271,6 @@ public class MapFilesServerHelper {
             } catch (IOException e) {
                 throw new InternetException(e.getMessage());
             }
-
-            File file = getDownloadFile(mapName);
 
             File fileDownloadInProgress = new File(file.getAbsolutePath() + ".downloading");
 
@@ -315,13 +309,13 @@ public class MapFilesServerHelper {
     public static void downloadMaps(@NonNull MapFiles mapFiles, @NonNull OnCancelled onCancelled, @NonNull OnDownloadProgress onDownloadProgress) throws IOException, CancelledException {
         UtilsLog.d(LOG_ENABLED, TAG, "downloadMaps", "map count == " + mapFiles.getFileList().size());
 
-        File downloadDir = getDownloadDir();
+        onDownloadProgress.onStart();
+
+        File downloadDir = MapFilesHelper.getDownloadDir();
 
         UtilsFiles.makeDir(downloadDir);
 
         UtilsFiles.recursiveDeleteInDirectory(downloadDir);
-
-        onDownloadProgress.onStart();
 
         for (FileInfo fileInfo : mapFiles.getFileList()) {
             String mapName = fileInfo.getMapName();

@@ -33,4 +33,8 @@
         android:id="@+id/action_main_create_files"
         android:title="create mwm files"
         tools:ignore="HardcodedText"/>
- </menu>
+    <item
+        android:id="@+id/action_main_clear_downloaded_maps_dir"
+        android:title="clear downloaded maps dir"
+        tools:ignore="HardcodedText"/>
+</menu>

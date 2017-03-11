@@ -141,7 +141,6 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
             mMapFiles = MapFilesHelper.find(parentMapsDir);
 
-
             final long localMapsTimestamp = getLocalMapsTimestamp();
 
             if (manualStart) {
@@ -151,9 +150,14 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
 
                     final long serverMapsTimestamp = getServerMapsTimestamp();
 
-                    if (manualRequest == ContentResolverHelper.REQUEST_SYNC_DOWNLOAD ||
-                            manualRequest == ContentResolverHelper.REQUEST_SYNC_INSTALL) {
+                    if (manualRequest == ContentResolverHelper.REQUEST_SYNC_DOWNLOAD) {
                         download(serverMapsTimestamp);
+                    } else if (manualRequest == ContentResolverHelper.REQUEST_SYNC_INSTALL) {
+                        if (needDownload()) {
+                            download(serverMapsTimestamp);
+                        }
+
+                        install();
                     }
                 }
             } else {
@@ -232,14 +236,12 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         else if (e instanceof InternetException) {
             syncResult.stats.numIoExceptions++;
             error = SYNC_ERROR_INTERNET;
-        }
-        else if (e instanceof IOException) syncResult.stats.numIoExceptions++;
+        } else if (e instanceof IOException) syncResult.stats.numIoExceptions++;
         else if (e instanceof FormatException) syncResult.stats.numParseExceptions++;
         else if (e instanceof CancelledException) {
             syncResult.stats.numIoExceptions++;
             error = SYNC_ERROR_CANCELLED;
-        }
-        else if (e instanceof InterruptedException) syncResult.stats.numIoExceptions++;
+        } else if (e instanceof InterruptedException) syncResult.stats.numIoExceptions++;
         else syncResult.databaseError = true;
 
         UtilsLog.e(TAG, "handleException", e);
@@ -259,6 +261,14 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         mNotificationHelper = null;
 
         mMapFiles = null;
+    }
+
+    @Override
+    public void onSyncCanceled() {
+        super.onSyncCanceled();
+
+        mSyncCancelled = true;
+        UtilsLog.d(LOG_ENABLED, TAG, "onSyncCanceled");
     }
 
     private long getLocalMapsTimestamp() throws RemoteException, FormatException, IOException {
@@ -396,11 +406,19 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
                 });
     }
 
-    @Override
-    public void onSyncCanceled() {
-        super.onSyncCanceled();
+    private boolean needDownload() {
+        // TODO: 11.03.2017 check maps exists in download dir and not changed
 
-        mSyncCancelled = true;
-        UtilsLog.d(LOG_ENABLED, TAG, "onSyncCanceled");
+        return true;
+    }
+
+    private void install() {
+        UtilsLog.d(LOG_ENABLED, TAG, "install start");
+
+        // TODO: 11.03.2017 save original if need
+
+        // TODO: 11.03.2017 move downloaded
+
+        UtilsLog.d(LOG_ENABLED, TAG, "install end");
     }
 }
