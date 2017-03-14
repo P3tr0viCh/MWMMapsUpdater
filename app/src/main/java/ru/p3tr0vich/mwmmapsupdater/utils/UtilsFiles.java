@@ -1,5 +1,6 @@
 package ru.p3tr0vich.mwmmapsupdater.utils;
 
+import android.support.annotation.CheckResult;
 import android.support.annotation.NonNull;
 
 import org.json.JSONException;
@@ -89,15 +90,20 @@ public class UtilsFiles {
         }
     }
 
-    public static void checkFileExists(@NonNull File file) throws FileNotFoundException {
-        if (!file.exists() || !file.isFile()) {
-            throw new FileNotFoundException(TAG + " -- checkFileExists: " + file.toString() +
-                    " not exists or not is a file");
-        }
+    @CheckResult
+    public static boolean isFileExists(@NonNull File file) {
+        return file.exists() && file.isFile();
+    }
+
+    @CheckResult
+    public static boolean isDirExists(@NonNull File dir) {
+        return dir.exists() && dir.isDirectory();
     }
 
     public static void makeDir(@NonNull File dir) throws IOException {
-        if (dir.exists() && dir.isDirectory()) return;
+        if (isDirExists(dir)) {
+            return;
+        }
 
         if (!dir.mkdirs()) {
             throw new IOException(TAG + " -- makeDir: can not create dir " + dir.toString());

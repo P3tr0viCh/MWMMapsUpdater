@@ -138,4 +138,8 @@ public class ProviderPreferencesHelper {
     public boolean isDownloadOnlyOnWifi() throws RemoteException, FormatException {
         return queryGetAsBool(mPreferencesHelper.keys.downloadOnlyOnWifi);
     }
+
+    public boolean isSaveOriginalMaps() throws RemoteException, FormatException {
+        return queryGetAsBool(mPreferencesHelper.keys.saveOriginalMaps);
+    }
 }

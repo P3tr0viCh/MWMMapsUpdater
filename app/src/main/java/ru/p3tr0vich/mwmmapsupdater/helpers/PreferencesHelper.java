@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.MatrixCursor;
-import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
@@ -30,11 +29,6 @@ public class PreferencesHelper {
     private static final String TAG = "PreferencesHelper";
 
     private static final boolean LOG_ENABLED = false;
-
-    /**
-     * Имя каталога с картами по умолчанию.
-     */
-    public static final String DEFAULT_PARENT_MAPS_DIR_NAME = "MapsWithMe";
 
     @SuppressWarnings("FieldCanBeLocal")
     private final Context mContext; // == ApplicationContext
@@ -80,7 +74,7 @@ public class PreferencesHelper {
         @IntDef({UNKNOWN,
                 PARENT_MAPS_DIR,
                 LOCAL_MAPS_TIMESTAMP, SERVER_MAPS_TIMESTAMP, CHECK_SERVER_TIMESTAMP,
-                ACTION_ON_HAS_UPDATES, DOWNLOAD_ONLY_ON_WIFI})
+                ACTION_ON_HAS_UPDATES, DOWNLOAD_ONLY_ON_WIFI, SAVE_ORIGINAL_MAPS})
         public @interface KeyAsInt {
         }
 
@@ -104,6 +98,9 @@ public class PreferencesHelper {
         public final String downloadOnlyOnWifi;
         public static final int DOWNLOAD_ONLY_ON_WIFI = R.string.pref_key_download_only_on_wifi;
 
+        public final String saveOriginalMaps;
+        public static final int SAVE_ORIGINAL_MAPS = R.string.pref_key_save_original_maps;
+
         private Keys(@NonNull Context context) {
             parentMapsDir = context.getString(PARENT_MAPS_DIR);
 
@@ -113,6 +110,7 @@ public class PreferencesHelper {
 
             actionOnHasUpdates = context.getString(ACTION_ON_HAS_UPDATES);
             downloadOnlyOnWifi = context.getString(DOWNLOAD_ONLY_ON_WIFI);
+            saveOriginalMaps = context.getString(SAVE_ORIGINAL_MAPS);
         }
 
         @KeyAsInt
@@ -123,6 +121,7 @@ public class PreferencesHelper {
             if (checkServerTimestamp.equals(key)) return CHECK_SERVER_TIMESTAMP;
             if (actionOnHasUpdates.equals(key)) return ACTION_ON_HAS_UPDATES;
             if (downloadOnlyOnWifi.equals(key)) return DOWNLOAD_ONLY_ON_WIFI;
+            if (saveOriginalMaps.equals(key)) return SAVE_ORIGINAL_MAPS;
             return UNKNOWN;
         }
     }
@@ -160,6 +159,7 @@ public class PreferencesHelper {
                 return PREFERENCE_TYPE_INT;
 
             case Keys.DOWNLOAD_ONLY_ON_WIFI:
+            case Keys.SAVE_ORIGINAL_MAPS:
                 return PREFERENCE_TYPE_BOOL;
 
             default:
@@ -213,6 +213,9 @@ public class PreferencesHelper {
                     break;
                 case Keys.DOWNLOAD_ONLY_ON_WIFI:
                     result.put(preference, isDownloadOnlyOnWifi());
+                    break;
+                case Keys.SAVE_ORIGINAL_MAPS:
+                    result.put(preference, isSaveOriginalMaps());
                     break;
                 case Keys.UNKNOWN:
                 default:
@@ -303,6 +306,9 @@ public class PreferencesHelper {
                 case Keys.DOWNLOAD_ONLY_ON_WIFI:
                     putDownloadOnlyOnWifi(preferences.getAsBoolean(preference));
                     break;
+                case Keys.SAVE_ORIGINAL_MAPS:
+                    putSaveOriginalMaps(preferences.getAsBoolean(preference));
+                    break;
                 case Keys.UNKNOWN:
                 default:
                     UtilsLog.e(TAG, "setPreferences", "unhandled preference == " + preference);
@@ -326,10 +332,12 @@ public class PreferencesHelper {
     @NonNull
     public String getParentMapsDir() {
         String dirName = getString(keys.parentMapsDir);
+
         if (dirName.isEmpty()) {
-            File Dir = new File(Environment.getExternalStorageDirectory(), DEFAULT_PARENT_MAPS_DIR_NAME);
-            dirName = Dir.getAbsolutePath();
+            File dir = MapFilesHelper.getDefaultParentMapsDir();
+            dirName = dir.getAbsolutePath();
         }
+
         return dirName;
     }
 
@@ -393,6 +401,17 @@ public class PreferencesHelper {
         mSharedPreferences
                 .edit()
                 .putBoolean(keys.downloadOnlyOnWifi, downloadOnlyOnWifi)
+                .apply();
+    }
+
+    public boolean isSaveOriginalMaps() {
+        return mSharedPreferences.getBoolean(keys.saveOriginalMaps, true);
+    }
+
+    private void putSaveOriginalMaps(boolean saveOriginalMaps) {
+        mSharedPreferences
+                .edit()
+                .putBoolean(keys.saveOriginalMaps, saveOriginalMaps)
                 .apply();
     }
 }

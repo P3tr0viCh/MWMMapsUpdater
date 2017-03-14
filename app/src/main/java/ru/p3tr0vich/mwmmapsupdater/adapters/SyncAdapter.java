@@ -15,14 +15,15 @@ import android.support.annotation.NonNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.concurrent.TimeUnit;
 
 import ru.p3tr0vich.mwmmapsupdater.BuildConfig;
-import ru.p3tr0vich.mwmmapsupdater.exceptions.CancelledException;
 import ru.p3tr0vich.mwmmapsupdater.Consts;
+import ru.p3tr0vich.mwmmapsupdater.exceptions.CancelledException;
 import ru.p3tr0vich.mwmmapsupdater.exceptions.InternetException;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ConnectivityHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ContentResolverHelper;
@@ -31,9 +32,11 @@ import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesServerHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.NotificationHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.PreferencesHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ProviderPreferencesHelper;
+import ru.p3tr0vich.mwmmapsupdater.models.FileInfo;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
 import ru.p3tr0vich.mwmmapsupdater.observers.SyncProgressObserver;
 import ru.p3tr0vich.mwmmapsupdater.utils.Utils;
+import ru.p3tr0vich.mwmmapsupdater.utils.UtilsFiles;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
 public class SyncAdapter extends AbstractThreadedSyncAdapter {
@@ -417,13 +420,51 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
         return true;
     }
 
-    private void install() {
+    private void install() throws RemoteException, FormatException, IOException {
         UtilsLog.d(LOG_ENABLED, TAG, "install start");
 
-        // TODO: 11.03.2017 save original if need
+        if (mProviderPreferencesHelper.isSaveOriginalMaps()) {
+            saveOriginalMaps();
+        }
 
         // TODO: 11.03.2017 move downloaded
 
         UtilsLog.d(LOG_ENABLED, TAG, "install end");
+    }
+
+    private void saveOriginalMaps() throws IOException {
+        UtilsLog.d(LOG_ENABLED, TAG, "saveOriginalMaps start");
+
+        File backupMapsDirParent = MapFilesHelper.getBackupMapsDir();
+
+        File backupMapsDir = new File(backupMapsDirParent, mMapFiles.getMapSubDir());
+
+        UtilsLog.d(LOG_ENABLED, TAG, "saveOriginalMaps", "backup dir == " + backupMapsDir.getAbsolutePath());
+
+        UtilsFiles.makeDir(backupMapsDir);
+
+        String mapFileName;
+
+        File mapFileBackup;
+        File mapFileOriginal;
+
+        File mapDirOriginal = new File(mMapFiles.getMapDir(), mMapFiles.getMapSubDir());
+
+        for (FileInfo fileInfo : mMapFiles.getFileList()) {
+            mapFileName = fileInfo.getMapName() + Consts.MAP_FILE_NAME_EXT;
+
+            mapFileBackup = new File(backupMapsDir, mapFileName);
+
+            if (!UtilsFiles.isFileExists(mapFileBackup)) {
+                mapFileOriginal = new File(mapDirOriginal, mapFileName);
+
+                if (!mapFileOriginal.renameTo(mapFileBackup)) {
+                    throw new IOException(TAG + " -- renameTo: can not rename file from " +
+                            mapFileOriginal.toString() + " to " + mapFileBackup.toString());
+                }
+            }
+        }
+
+        UtilsLog.d(LOG_ENABLED, TAG, "saveOriginalMaps end");
     }
 }
