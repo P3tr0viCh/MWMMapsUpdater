@@ -201,8 +201,6 @@ public class FragmentMain extends FragmentBase implements
 
         UtilsLog.d(LOG_ENABLED, TAG, "onActivityCreated", "savedInstanceState " + (savedInstanceState == null ? "=" : "!") + "= null");
 
-        getLoaderManager().initLoader(MAP_FILES_LOADER_ID, null, this);
-
         if (savedInstanceState == null) {
             mLocalMapsTimestamp = preferencesHelper.getLocalMapsTimestamp();
             mServerMapsTimestamp = preferencesHelper.getServerMapsTimestamp();
@@ -217,6 +215,8 @@ public class FragmentMain extends FragmentBase implements
 
         updateDateLocal(mLocalMapsTimestamp);
         updateDateServer(mServerMapsTimestamp);
+
+        getLoaderManager().initLoader(MAP_FILES_LOADER_ID, null, this);
     }
 
     @Override
@@ -428,7 +428,6 @@ public class FragmentMain extends FragmentBase implements
                         } else {
                             ContentResolverHelper.requestSync(mAppAccount, ContentResolverHelper.REQUEST_SYNC_DOWNLOAD);
                         }
-                        break;
                     } else {
                         Utils.toast(getContext(), R.string.message_error_no_internet);
                     }

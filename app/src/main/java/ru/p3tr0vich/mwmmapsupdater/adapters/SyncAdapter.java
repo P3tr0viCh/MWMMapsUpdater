@@ -349,17 +349,22 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter {
     }
 
     private boolean checkWifi(@ConnectivityHelper.ConnectedState int connectedState) throws RemoteException, FormatException, IOException {
-        if (!BuildConfig.DEBUG) {
-            boolean downloadOnlyOnWifi = mProviderPreferencesHelper.isDownloadOnlyOnWifi();
-
-            if (downloadOnlyOnWifi && connectedState != ConnectivityHelper.CONNECTED_WIFI) {
-                // TODO: 28.02.2017 write pref "check on wifi enabled" and start sync after wifi connected
-
-                return false;
-            }
+        if (BuildConfig.DEBUG) {
+            return true;
         }
 
-        return true;
+        boolean downloadOnlyOnWifi = mProviderPreferencesHelper.isDownloadOnlyOnWifi();
+
+        if (downloadOnlyOnWifi) {
+            if (connectedState == ConnectivityHelper.CONNECTED_WIFI) {
+                return true;
+            } else {
+                // TODO: 28.02.2017 write pref "check on wifi enabled" and start sync after wifi connected
+                return false;
+            }
+        } else {
+            return true;
+        }
     }
 
     private void download(final long serverFilesTimestamp) throws IOException, RemoteException, FormatException, CancelledException {
