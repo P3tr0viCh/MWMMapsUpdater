@@ -699,10 +699,16 @@ public class FragmentMain extends FragmentBase implements
                 }
 
                 break;
-            case R.id.action_main_clear_downloaded_maps_dir:
+            case R.id.action_main_clear_download_maps_dir:
                 File downloadDir = MapFilesHelper.getDownloadDir();
 
                 UtilsFiles.recursiveDeleteInDirectory(downloadDir);
+
+                break;
+            case R.id.action_main_clear_backup_maps_dir:
+                File backupDir = MapFilesHelper.getBackupMapsDir();
+
+                UtilsFiles.recursiveDeleteInDirectory(backupDir);
 
                 break;
             default:

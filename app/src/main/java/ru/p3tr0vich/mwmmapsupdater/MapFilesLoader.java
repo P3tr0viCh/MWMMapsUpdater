@@ -5,8 +5,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.AsyncTaskLoader;
 
-import java.io.File;
-
 import ru.p3tr0vich.mwmmapsupdater.broadcastreceivers.BroadcastReceiverMapFilesLoading;
 import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesHelper;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
@@ -59,30 +57,31 @@ public class MapFilesLoader extends AsyncTaskLoader<MapFiles> {
 
         mMapFiles = data;
 
-        if (mMapDirObserver != null) {
-            mMapDirObserver.stopWatching();
-        }
-        if (mMapSubDirObserver != null) {
-            mMapSubDirObserver.stopWatching();
-        }
-
-        if (mMapFiles != null) {
-            String mapDir = mMapFiles.getMapDir();
-
-            if (!mapDir.isEmpty()) {
-                mMapDirObserver = new MapFilesObserver(this, mapDir);
-                mMapDirObserver.startWatching();
-
-                String mapSubDir = mMapFiles.getMapSubDir();
-
-                if (!mapSubDir.isEmpty()) {
-                    mapSubDir = mapDir + File.separator + mapSubDir;
-
-                    mMapSubDirObserver = new MapFilesObserver(this, mapSubDir);
-                    mMapSubDirObserver.startWatching();
-                }
-            }
-        }
+        // TODO: 17.03.2017 add enable/disable watching
+//        if (mMapDirObserver != null) {
+//            mMapDirObserver.stopWatching();
+//        }
+//        if (mMapSubDirObserver != null) {
+//            mMapSubDirObserver.stopWatching();
+//        }
+//
+//        if (mMapFiles != null) {
+//            String mapDir = mMapFiles.getMapDir();
+//
+//            if (!mapDir.isEmpty()) {
+//                mMapDirObserver = new MapFilesObserver(this, mapDir);
+//                mMapDirObserver.startWatching();
+//
+//                String mapSubDir = mMapFiles.getMapSubDir();
+//
+//                if (!mapSubDir.isEmpty()) {
+//                    mapSubDir = mapDir + File.separator + mapSubDir;
+//
+//                    mMapSubDirObserver = new MapFilesObserver(this, mapSubDir);
+//                    mMapSubDirObserver.startWatching();
+//                }
+//            }
+//        }
 
         if (isStarted()) {
             super.deliverResult(data);

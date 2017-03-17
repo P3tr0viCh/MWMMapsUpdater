@@ -38,7 +38,7 @@ public class MapFilesServerHelper {
     private static final boolean DEBUG_DUMMY_DOWNLOAD = true;
     private static final boolean DEBUG_DUMMY_DOWNLOAD_LOG_PROGRESS = false;
     private static final boolean DEBUG_RETURN_CURRENT_DATE = false;
-    private static final boolean DEBUG_DOWNLOAD_WAIT_ENABLED = true;
+    private static final boolean DEBUG_DOWNLOAD_WAIT_ENABLED = false;
     private static final boolean DEBUG_FILE_INFO_WAIT_ENABLED = false;
 
     private static final String PROTOCOL = "http";

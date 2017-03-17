@@ -46,22 +46,22 @@ public class PreferencesHelper {
     public static final int PREFERENCE_TYPE_BOOL = 3;
 
     @Retention(RetentionPolicy.SOURCE)
-    @IntDef({ACTION_ON_HAS_UPDATES_DO_NOTHING, ACTION_ON_HAS_UPDATES_SHOW_NOTIFICATION,
-            ACTION_ON_HAS_UPDATES_DOWNLOAD, ACTION_ON_HAS_UPDATES_INSTALL})
+    @IntDef({ACTION_ON_HAS_UPDATES_DO_NOTHING, ACTION_ON_HAS_UPDATES_DO_SHOW_NOTIFICATION,
+            ACTION_ON_HAS_UPDATES_DO_DOWNLOAD, ACTION_ON_HAS_UPDATES_DO_INSTALL})
     public @interface ActionOnHasUpdates {
     }
 
     public static final int ACTION_ON_HAS_UPDATES_DO_NOTHING = 0;
-    public static final int ACTION_ON_HAS_UPDATES_SHOW_NOTIFICATION = 1;
-    public static final int ACTION_ON_HAS_UPDATES_DOWNLOAD = 2;
-    public static final int ACTION_ON_HAS_UPDATES_INSTALL = 3;
+    public static final int ACTION_ON_HAS_UPDATES_DO_SHOW_NOTIFICATION = 1;
+    public static final int ACTION_ON_HAS_UPDATES_DO_DOWNLOAD = 2;
+    public static final int ACTION_ON_HAS_UPDATES_DO_INSTALL = 3;
 
     @ActionOnHasUpdates
     public static int getActionOnHasUpdatesFromInt(int actionOnHasUpdates) {
         switch (actionOnHasUpdates) {
-            case ACTION_ON_HAS_UPDATES_SHOW_NOTIFICATION:
-            case ACTION_ON_HAS_UPDATES_DOWNLOAD:
-            case ACTION_ON_HAS_UPDATES_INSTALL:
+            case ACTION_ON_HAS_UPDATES_DO_SHOW_NOTIFICATION:
+            case ACTION_ON_HAS_UPDATES_DO_DOWNLOAD:
+            case ACTION_ON_HAS_UPDATES_DO_INSTALL:
                 return actionOnHasUpdates;
             default:
             case ACTION_ON_HAS_UPDATES_DO_NOTHING:
@@ -238,7 +238,29 @@ public class PreferencesHelper {
 
         ContentValues preferences = getPreferences(preference);
         for (String key : preferences.keySet()) {
-            matrixCursor.addRow(new Object[]{key, preferences.get(key)});
+            switch (getPreferenceType(key)) {
+                case PREFERENCE_TYPE_STRING:
+                    matrixCursor.addRow(new Object[]{key, preferences.getAsString(key)});
+                    break;
+                case PREFERENCE_TYPE_LONG:
+                    matrixCursor.addRow(new Object[]{key, preferences.getAsLong(key)});
+                    break;
+                case PREFERENCE_TYPE_INT:
+                    matrixCursor.addRow(new Object[]{key, preferences.getAsInteger(key)});
+                    break;
+                case PREFERENCE_TYPE_BOOL:
+                    matrixCursor.addRow(new Object[]{key, Integer.valueOf(preferences.getAsBoolean(key) ? 1 : 0)});
+                    break;
+            }
+        }
+
+        if (LOG_ENABLED) {
+            if (matrixCursor.moveToFirst()) {
+                do {
+                    UtilsLog.d(true, TAG, "getPreferencesCursor",
+                            "key == " + matrixCursor.getString(0) + ", type == " + matrixCursor.getType(1) + ", value == " + matrixCursor.getString(1));
+                } while (matrixCursor.moveToNext());
+            }
         }
 
         return matrixCursor;
@@ -383,7 +405,7 @@ public class PreferencesHelper {
 
     @ActionOnHasUpdates
     private int getActionOnHasUpdates() {
-        return getActionOnHasUpdatesFromInt(mSharedPreferences.getInt(keys.actionOnHasUpdates, ACTION_ON_HAS_UPDATES_DOWNLOAD));
+        return getActionOnHasUpdatesFromInt(mSharedPreferences.getInt(keys.actionOnHasUpdates, ACTION_ON_HAS_UPDATES_DO_DOWNLOAD));
     }
 
     private void putActionOnHasUpdates(@ActionOnHasUpdates int actionOnHasUpdates) {
