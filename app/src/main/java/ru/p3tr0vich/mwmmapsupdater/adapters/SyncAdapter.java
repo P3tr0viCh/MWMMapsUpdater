@@ -157,9 +157,11 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
 
                     if (manualRequest == ContentResolverHelper.REQUEST_SYNC_DOWNLOAD) {
                         download();
+                        mNotificationHelper.notifyDownloadEnd(serverMapsTimestamp);
                     } else if (manualRequest == ContentResolverHelper.REQUEST_SYNC_INSTALL) {
                         if (needDownload()) {
                             download();
+                            mNotificationHelper.notifyDownloadEnd(serverMapsTimestamp);
                         }
 
                         install(serverMapsTimestamp);
