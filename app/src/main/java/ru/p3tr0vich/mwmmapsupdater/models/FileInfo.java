@@ -2,25 +2,28 @@ package ru.p3tr0vich.mwmmapsupdater.models;
 
 import android.support.annotation.NonNull;
 
-import java.util.Date;
+import ru.p3tr0vich.mwmmapsupdater.Consts;
 
 public class FileInfo implements Comparable<FileInfo> {
 
     private final String mMapName;
-    private final Date mDate;
+    private long mTimestamp;
 
-    public FileInfo(@NonNull String mapName, @NonNull Date date) {
+    public FileInfo(@NonNull String mapName) {
         mMapName = mapName;
-        mDate = date;
+        mTimestamp = Consts.BAD_DATETIME;
     }
 
     public String getMapName() {
         return mMapName;
     }
 
-    @NonNull
-    public Date getDate() {
-        return mDate;
+    public long getTimestamp() {
+        return mTimestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        mTimestamp = timestamp;
     }
 
     @Override
@@ -30,13 +33,13 @@ public class FileInfo implements Comparable<FileInfo> {
 
         FileInfo fileInfo = (FileInfo) o;
 
-        return mMapName.equals(fileInfo.mMapName) && mDate.equals(fileInfo.mDate);
+        return mMapName.equals(fileInfo.mMapName) && mTimestamp == fileInfo.mTimestamp;
     }
 
     @Override
     public int hashCode() {
         int result = mMapName.hashCode();
-        result = 31 * result + mDate.hashCode();
+        result = 31 * result + (int) (mTimestamp ^ (mTimestamp >>> 32));
         return result;
     }
 
@@ -49,7 +52,7 @@ public class FileInfo implements Comparable<FileInfo> {
     public String toString() {
         return "FileInfo{" +
                 "mMapName='" + mMapName + '\'' +
-                ", mDate=" + mDate +
+                ", mTimestamp=" + mTimestamp +
                 '}';
     }
 }

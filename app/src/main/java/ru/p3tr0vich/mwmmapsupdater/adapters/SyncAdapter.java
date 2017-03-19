@@ -156,13 +156,13 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
                     final long serverMapsTimestamp = getServerMapsTimestamp();
 
                     if (manualRequest == ContentResolverHelper.REQUEST_SYNC_DOWNLOAD) {
-                        download(serverMapsTimestamp);
+                        download();
                     } else if (manualRequest == ContentResolverHelper.REQUEST_SYNC_INSTALL) {
                         if (needDownload()) {
-                            download(serverMapsTimestamp);
+                            download();
                         }
 
-                        install();
+                        install(serverMapsTimestamp);
                     }
                 }
             } else {
@@ -187,10 +187,6 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
                         int actionOnHasUpdates = mProviderPreferencesHelper.getActionOnHasUpdates();
 
                         switch (actionOnHasUpdates) {
-                            case PreferencesHelper.ACTION_ON_HAS_UPDATES_DO_NOTHING:
-                                UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == do nothing");
-
-                                break;
                             case PreferencesHelper.ACTION_ON_HAS_UPDATES_DO_SHOW_NOTIFICATION:
                                 UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == show notification");
 
@@ -201,14 +197,22 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
                                 UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == download");
 
                                 if (checkWifi(connectedState)) {
-                                    download(serverMapsTimestamp);
+                                    download();
+
+                                    mNotificationHelper.notifyDownloadEnd(serverMapsTimestamp);
                                 }
 
                                 break;
                             case PreferencesHelper.ACTION_ON_HAS_UPDATES_DO_INSTALL:
                                 UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == download and install");
 
-                                // TODO: 28.02.2017 download and copy to mwm dir
+                                if (checkWifi(connectedState)) {
+                                    download();
+
+                                    install(serverMapsTimestamp);
+
+                                    mNotificationHelper.notifyInstallEnd(serverMapsTimestamp);
+                                }
 
                                 break;
                         }
@@ -379,7 +383,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
         }
     }
 
-    private void download(final long serverFilesTimestamp) throws IOException, RemoteException, FormatException, CancelledException {
+    private void download() throws IOException, RemoteException, FormatException, CancelledException {
         MapFilesServerHelper.downloadMaps(mMapFiles, this,
                 new MapFilesServerHelper.OnDownloadProgress() {
 
@@ -391,7 +395,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
                     }
 
                     @Override
-                    public void onMapStart(@NonNull String mapName) {
+                    public void onMapStart(@NonNull String mapName, int i, int count) {
                         String name = mapName;
 
                         try {
@@ -400,7 +404,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
                             UtilsLog.e(TAG, "download > OnDownloadProgress > onMapStart", e);
                         }
 
-                        mNotificationHelper.notifyDownloadMapStart(name);
+                        mNotificationHelper.notifyDownloadMapStart(name, i, count);
                     }
 
                     @Override
@@ -410,7 +414,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
 
                     @Override
                     public void onEnd() {
-                        mNotificationHelper.notifyDownloadEnd(serverFilesTimestamp);
+                        mNotificationHelper.cancel();
                     }
                 });
     }
@@ -431,14 +435,14 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
             return true;
         }
 
-        // TODO: 11.03.2017 check maps exists in download dir and not changed
+        // TODO: 11.03.2017 check maps exists in download dir, not changed and has current version
 
         UtilsLog.d(LOG_ENABLED, TAG, "needDownload", "return false");
 
         return false;
     }
 
-    private void install() throws RemoteException, FormatException, IOException, CancelledException {
+    private void install(long timestamp) throws RemoteException, FormatException, IOException, CancelledException {
         UtilsLog.d(LOG_ENABLED, TAG, "install", "start");
 
         if (mProviderPreferencesHelper.isSaveOriginalMaps()) {
@@ -447,9 +451,12 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
 
         moveDownloaded();
 
-        // TODO: 17.03.2017 update map info file
+        MapFilesHelper.updateFileInfoList(mMapFiles);
+        MapFilesHelper.writeToJSONFile(getContext(), mMapFiles);
 
-        // TODO: 17.03.2017 notify local maps time changed
+        mProviderPreferencesHelper.putLocalMapsTimestamp(timestamp);
+
+        SyncProgressObserver.notifyLocalMapsChecked(getContext(), timestamp);
 
         // TODO: 17.03.2017 update MAPS.ME edits.xml
 
@@ -484,10 +491,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
             if (!UtilsFiles.isFileExists(mapFileBackup)) {
                 mapFileOriginal = new File(mapDirOriginal, mapFileName);
 
-                if (!mapFileOriginal.renameTo(mapFileBackup)) {
-                    throw new IOException(TAG + " -- renameTo: can not rename file from " +
-                            mapFileOriginal.toString() + " to " + mapFileBackup.toString());
-                }
+                UtilsFiles.rename(mapFileOriginal, mapFileBackup);
 
                 UtilsLog.d(LOG_ENABLED, TAG, "saveOriginalMaps", "'" + mapFileOriginal.getName() + "' moved");
             }
@@ -516,10 +520,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
             mapFile = new File(mapDir, mapFileName);
             mapFileDownloaded = new File(downloadDir, mapFileName);
 
-            if (!mapFileDownloaded.renameTo(mapFile)) {
-                throw new IOException(TAG + " -- renameTo: can not rename file from " +
-                        mapFileDownloaded.toString() + " to " + mapFile.toString());
-            }
+            UtilsFiles.rename(mapFileDownloaded, mapFile);
 
             UtilsLog.d(LOG_ENABLED, TAG, "moveDownloaded", "'" + mapFileDownloaded.getName() + "' moved");
         }

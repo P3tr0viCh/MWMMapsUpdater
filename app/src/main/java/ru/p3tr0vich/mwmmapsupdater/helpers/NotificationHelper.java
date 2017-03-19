@@ -47,7 +47,7 @@ public class NotificationHelper {
     public void notifyHasUpdates(long timestamp) {
         mBuilder.setTicker(mContext.getText(R.string.text_notification_has_updates_ticker));
         mBuilder.setContentTitle(mContext.getText(R.string.text_notification_has_updates_title));
-        mBuilder.setContentText(mContext.getString(R.string.text_notification_has_updates_text,
+        mBuilder.setContentText(mContext.getString(R.string.text_notification_maps_version_text,
                 UtilsDate.format(timestamp)));
         mBuilder.setSmallIcon(R.mipmap.ic_notification);
         mBuilder.setLargeIcon(BitmapFactory.decodeResource(mContext.getResources(), R.mipmap.ic_launcher));
@@ -68,8 +68,8 @@ public class NotificationHelper {
         notify(mBuilder.build());
     }
 
-    public void notifyDownloadMapStart(@NonNull String mapName) {
-        mBuilder.setContentText(mapName);
+    public void notifyDownloadMapStart(@NonNull String mapName, int i, int count) {
+        mBuilder.setContentText(mContext.getString(R.string.text_notification_download_map_start_text, mapName, i, count));
 
         notify(mBuilder.build());
     }
@@ -81,11 +81,24 @@ public class NotificationHelper {
     }
 
     public void notifyDownloadEnd(long timestamp) {
-        cancel(); // <-- исправление бага Андроид (вертикальное выравнивание title и text по центру)
-
         mBuilder.setTicker(mContext.getText(R.string.text_notification_download_end_ticker));
         mBuilder.setContentTitle(mContext.getText(R.string.text_notification_download_end_title));
-        mBuilder.setContentText(mContext.getString(R.string.text_notification_has_updates_text,
+        mBuilder.setContentText(mContext.getString(R.string.text_notification_maps_version_text,
+                UtilsDate.format(timestamp)));
+        mBuilder.setProgress(0, 0, false);
+        mBuilder.setSmallIcon(R.mipmap.ic_notification);
+        mBuilder.setLargeIcon(BitmapFactory.decodeResource(mContext.getResources(), R.mipmap.ic_launcher));
+        mBuilder.setAutoCancel(true);
+        mBuilder.setOngoing(false);
+        mBuilder.setDefaults(Notification.DEFAULT_ALL);
+
+        notify(mBuilder.build());
+    }
+
+    public void notifyInstallEnd(long timestamp) {
+        mBuilder.setTicker(mContext.getText(R.string.text_notification_install_end_ticker));
+        mBuilder.setContentTitle(mContext.getText(R.string.text_notification_install_end_title));
+        mBuilder.setContentText(mContext.getString(R.string.text_notification_maps_version_text,
                 UtilsDate.format(timestamp)));
         mBuilder.setProgress(0, 0, false);
         mBuilder.setSmallIcon(R.mipmap.ic_notification);

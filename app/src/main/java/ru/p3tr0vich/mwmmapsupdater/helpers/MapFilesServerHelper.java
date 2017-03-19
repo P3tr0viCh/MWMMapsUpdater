@@ -14,7 +14,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +37,7 @@ public class MapFilesServerHelper {
     private static final boolean DEBUG_DUMMY_DOWNLOAD = true;
     private static final boolean DEBUG_DUMMY_DOWNLOAD_LOG_PROGRESS = false;
     private static final boolean DEBUG_RETURN_CURRENT_DATE = false;
-    private static final boolean DEBUG_DOWNLOAD_WAIT_ENABLED = false;
+    private static final boolean DEBUG_DOWNLOAD_WAIT_ENABLED = true;
     private static final boolean DEBUG_FILE_INFO_WAIT_ENABLED = false;
 
     private static final String PROTOCOL = "http";
@@ -57,7 +56,7 @@ public class MapFilesServerHelper {
     public interface OnDownloadProgress {
         void onStart();
 
-        void onMapStart(@NonNull String mapName);
+        void onMapStart(@NonNull String mapName, int i, int count);
 
         void onProgress(int progress);
 
@@ -128,7 +127,10 @@ public class MapFilesServerHelper {
             return null;
         }
 
-        return new FileInfo(mapName, new Date(lastModified));
+        FileInfo fileInfo = new FileInfo(mapName);
+        fileInfo.setTimestamp(lastModified);
+
+        return fileInfo;
     }
 
     @NonNull
@@ -276,31 +278,31 @@ public class MapFilesServerHelper {
 
             OutputStream output = new FileOutputStream(fileDownloadInProgress);
 
-            byte data[] = new byte[1024];
+            try {
+                byte data[] = new byte[1024];
 
-            while ((length = inputRead(input, data)) != -1) {
-                onCancelled.checkCancelled();
+                while ((length = inputRead(input, data)) != -1) {
+                    onCancelled.checkCancelled();
 
-                total += length;
+                    total += length;
 
-                progress = (int) (total * 100 / fileLength);
+                    progress = (int) (total * 100 / fileLength);
 
-                onDownloadProgress.onProgress(progress);
+                    onDownloadProgress.onProgress(progress);
 
-                outputWrite(output, data, length);
+                    outputWrite(output, data, length);
+                }
+            } finally {
+                output.flush();
+
+                output.close();
             }
-
-            output.flush();
-
-            output.close();
 
             input.close();
 
             connection.disconnect();
 
-            if (!fileDownloadInProgress.renameTo(file)) {
-                throw new IOException("Unable to rename file '" + fileDownloadInProgress.getAbsolutePath() + "'");
-            }
+            UtilsFiles.rename(fileDownloadInProgress, file);
         } finally {
             UtilsLog.d(LOG_ENABLED, TAG, "download", "end");
         }
@@ -317,12 +319,18 @@ public class MapFilesServerHelper {
 
         UtilsFiles.recursiveDeleteInDirectory(downloadDir);
 
-        for (FileInfo fileInfo : mapFiles.getFileList()) {
+        List<FileInfo> fileInfoList = mapFiles.getFileList();
+
+        int i = 0, count = fileInfoList.size();
+
+        for (FileInfo fileInfo : fileInfoList) {
+            i++;
+
             String mapName = fileInfo.getMapName();
 
             onCancelled.checkCancelled();
 
-            onDownloadProgress.onMapStart(mapName);
+            onDownloadProgress.onMapStart(mapName, i, count);
 
             download(mapName, onCancelled, onDownloadProgress);
         }

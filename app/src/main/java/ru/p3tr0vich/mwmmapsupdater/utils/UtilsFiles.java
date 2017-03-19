@@ -109,4 +109,11 @@ public class UtilsFiles {
             throw new IOException(TAG + " -- makeDir: can not create dir " + dir.toString());
         }
     }
+
+    public static void rename(@NonNull File source, @NonNull File dest) throws IOException {
+        if (!source.renameTo(dest)) {
+            throw new IOException(TAG + " -- rename: can not rename file from " +
+                    source.toString() + " to " + dest.toString());
+        }
+    }
 }

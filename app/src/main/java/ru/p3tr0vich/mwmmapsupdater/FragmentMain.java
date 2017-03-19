@@ -819,7 +819,7 @@ public class FragmentMain extends FragmentBase implements
     private boolean hasDownloadedMaps() {
         File downloadDir = MapFilesHelper.getDownloadDir();
 
-        if (!downloadDir.exists() || !downloadDir.isDirectory()){
+        if (!downloadDir.exists() || !downloadDir.isDirectory()) {
             UtilsLog.d(LOG_ENABLED, TAG, "hasDownloadedMaps", "Downloaded maps directory not exists or not directory");
             return false;
         }
@@ -849,12 +849,12 @@ public class FragmentMain extends FragmentBase implements
         } else {
             mImgCheckServer.clearAnimation();
 
-            if (mLocalMapsTimestamp == Consts.BAD_DATETIME || mServerMapsTimestamp == Consts.BAD_DATETIME ||
-                    mLocalMapsTimestamp >= mServerMapsTimestamp) {
-                updateButtonAction(BUTTON_ACTION_CHECK_SERVER);
+            if (hasDownloadedMaps()) {
+                updateButtonAction(BUTTON_ACTION_INSTALL);
             } else {
-                if (hasDownloadedMaps()) {
-                    updateButtonAction(BUTTON_ACTION_INSTALL);
+                if (mLocalMapsTimestamp == Consts.BAD_DATETIME || mServerMapsTimestamp == Consts.BAD_DATETIME ||
+                        mLocalMapsTimestamp >= mServerMapsTimestamp) {
+                    updateButtonAction(BUTTON_ACTION_CHECK_SERVER);
                 } else {
                     updateButtonAction(BUTTON_ACTION_DOWNLOAD);
                 }

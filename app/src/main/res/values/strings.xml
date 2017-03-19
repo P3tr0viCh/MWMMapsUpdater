@@ -13,11 +13,14 @@
 
     <string name="text_notification_has_updates_ticker">Доступно обновление карт MAPS.ME</string>
     <string name="text_notification_has_updates_title">Обновление карт MAPS.ME</string>
-    <string name="text_notification_has_updates_text">Версия: %s</string>
+    <string name="text_notification_maps_version_text">Версия: %s</string>
     <string name="text_notification_download_start_ticker">Загрузка карт MAPS.ME</string>
     <string name="text_notification_download_start_title">Загрузка карт MAPS.ME</string>
+    <string name="text_notification_download_map_start_text">%1$s (%2$d/%3$d)</string>
     <string name="text_notification_download_end_ticker">Карты MAPS.ME загружены</string>
     <string name="text_notification_download_end_title">Карты MAPS.ME загружены</string>
+    <string name="text_notification_install_end_ticker">Карты MAPS.ME обновлены</string>
+    <string name="text_notification_install_end_title">Карты MAPS.ME обновлены</string>
 
     <string name="message_check_server_active">Запрос выполняется…</string>
     <string name="message_download_without_wifi">Чтобы не платить за передачу данных, используйте Wi-Fi.</string>

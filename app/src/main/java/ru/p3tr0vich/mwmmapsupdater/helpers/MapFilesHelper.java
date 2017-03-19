@@ -3,7 +3,6 @@ package ru.p3tr0vich.mwmmapsupdater.helpers;
 import android.content.Context;
 import android.os.Environment;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import org.json.JSONArray;
@@ -17,7 +16,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
@@ -120,11 +118,18 @@ public class MapFilesHelper {
 
             JSONArray files = json.getJSONArray(JsonFields.FILES);
 
-            JSONObject fileInfo;
+            JSONObject jsonFileInfo;
+            FileInfo fileInfo;
+
             List<FileInfo> fileInfoList = mapFiles.getFileList();
+
             for (int i = 0, l = files.length(); i < l; i++) {
-                fileInfo = files.getJSONObject(i);
-                fileInfoList.add(new FileInfo(fileInfo.getString(JsonFields.FILE_NAME), new Date(fileInfo.getLong(JsonFields.FILE_TIMESTAMP))));
+                jsonFileInfo = files.getJSONObject(i);
+
+                fileInfo = new FileInfo(jsonFileInfo.getString(JsonFields.FILE_NAME));
+                fileInfo.setTimestamp(jsonFileInfo.getLong(JsonFields.FILE_TIMESTAMP));
+
+                fileInfoList.add(fileInfo);
             }
 
             Collections.sort(fileInfoList);
@@ -152,7 +157,7 @@ public class MapFilesHelper {
                 fileInfoObject = new JSONObject();
 
                 fileInfoObject.put(JsonFields.FILE_NAME, fileInfo.getMapName());
-                fileInfoObject.put(JsonFields.FILE_TIMESTAMP, fileInfo.getDate().getTime());
+                fileInfoObject.put(JsonFields.FILE_TIMESTAMP, fileInfo.getTimestamp());
 
                 files.put(fileInfoObject);
             }
@@ -180,28 +185,6 @@ public class MapFilesHelper {
         file.delete();
     }
 
-    @Nullable
-    private static FileInfo getFileInfo(@NonNull File mapSubDir, @NonNull String mapName) {
-        long lastModified;
-
-        if (BuildConfig.DEBUG && DEBUG_DUMMY_FILE_INFO) {
-            Random rand = new Random();
-
-            lastModified = -946771200000L + (Math.abs(rand.nextLong()) % (70L * 365 * 24 * 60 * 60 * 1000));
-        } else {
-            File file = new File(mapSubDir, mapName + Consts.MAP_FILE_NAME_EXT);
-
-            lastModified = file.lastModified();
-        }
-
-        if (lastModified == 0) {
-            UtilsLog.e(TAG, "getFileInfo", "lastModified == 0");
-            return null;
-        }
-
-        return new FileInfo(mapName, new Date(lastModified));
-    }
-
     public static long mapDirNameToTimestamp(@NonNull String mapDirName) {
         if (!TextUtils.isEmpty(mapDirName)) {
             try {
@@ -214,6 +197,34 @@ public class MapFilesHelper {
         }
 
         return 0;
+    }
+
+    private static void updateFileInfo(@NonNull File mapSubDir, @NonNull FileInfo fileInfo) {
+        long lastModified;
+
+        if (BuildConfig.DEBUG && DEBUG_DUMMY_FILE_INFO) {
+            Random rand = new Random();
+
+            lastModified = -946771200000L + (Math.abs(rand.nextLong()) % (70L * 365 * 24 * 60 * 60 * 1000));
+        } else {
+            File file = new File(mapSubDir, fileInfo.getMapName() + Consts.MAP_FILE_NAME_EXT);
+
+            lastModified = file.lastModified();
+        }
+
+        if (lastModified == 0) {
+            UtilsLog.e(TAG, "updateFileInfo", "lastModified == 0");
+        }
+
+        fileInfo.setTimestamp(lastModified);
+    }
+
+    public static void updateFileInfoList(@NonNull MapFiles mapFiles) {
+        File mapSubDir = new File(mapFiles.getMapDir(), mapFiles.getMapSubDir());
+
+        for (FileInfo fileInfo : mapFiles.getFileList()) {
+            updateFileInfo(mapSubDir, fileInfo);
+        }
     }
 
     @NonNull
@@ -312,24 +323,36 @@ public class MapFilesHelper {
 
         List<FileInfo> fileInfoList = new ArrayList<>();
 
+//        for (String mapName : mapNameList) {
+//            FileInfo fileInfo = getFileInfo(mapSubDir, mapName);
+//
+//            UtilsLog.d(LOG_ENABLED, TAG, "find", "fileInfo == " + fileInfo);
+//
+//            if (fileInfo != null) {
+//                fileInfoList.add(fileInfo);
+//            }
+//        }
+//
+//        if (fileInfoList.isEmpty()) {
+//            UtilsLog.e(TAG, "findFiles", "Map files read file info error");
+//            return mapFiles;
+//        }
+
         for (String mapName : mapNameList) {
-            FileInfo fileInfo = getFileInfo(mapSubDir, mapName);
-
-            UtilsLog.d(LOG_ENABLED, TAG, "find", "fileInfo == " + fileInfo);
-
-            if (fileInfo != null) {
-                fileInfoList.add(fileInfo);
-            }
-        }
-
-        if (fileInfoList.isEmpty()) {
-            UtilsLog.e(TAG, "findFiles", "Map files read file info error");
-            return mapFiles;
+            fileInfoList.add(new FileInfo(mapName));
         }
 
         Collections.sort(fileInfoList);
 
         mapFiles.setFileList(fileInfoList);
+
+        updateFileInfoList(mapFiles);
+
+        if (LOG_ENABLED) {
+            for (FileInfo fileInfo : mapFiles.getFileList()) {
+                UtilsLog.d(true, TAG, "find", "fileInfo == " + fileInfo);
+            }
+        }
 
         return mapFiles;
     }
@@ -338,7 +361,7 @@ public class MapFilesHelper {
         List<Long> dates = new ArrayList<>();
 
         for (FileInfo fileInfo : fileInfoList) {
-            dates.add(fileInfo.getDate().getTime());
+            dates.add(fileInfo.getTimestamp());
         }
 
         long timestamp = Consts.BAD_DATETIME;
