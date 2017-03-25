@@ -8,7 +8,6 @@ import android.support.v4.content.AsyncTaskLoader;
 import ru.p3tr0vich.mwmmapsupdater.broadcastreceivers.BroadcastReceiverMapFilesLoading;
 import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesHelper;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
-import ru.p3tr0vich.mwmmapsupdater.observers.MapFilesObserver;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
 public class MapFilesLoader extends AsyncTaskLoader<MapFiles> {
@@ -21,8 +20,8 @@ public class MapFilesLoader extends AsyncTaskLoader<MapFiles> {
 
     private MapFiles mMapFiles;
 
-    private MapFilesObserver mMapDirObserver;
-    private MapFilesObserver mMapSubDirObserver;
+//    private MapFilesObserver mMapDirObserver;
+//    private MapFilesObserver mMapSubDirObserver;
 
     public MapFilesLoader(Context context, @NonNull String mapDir) {
         super(context);

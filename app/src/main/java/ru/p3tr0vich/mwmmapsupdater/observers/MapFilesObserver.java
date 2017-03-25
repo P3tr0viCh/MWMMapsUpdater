@@ -17,7 +17,7 @@ public class MapFilesObserver extends FileObserver {
 
     private static final long ON_CONTENT_CHANGED_DELAY = TimeUnit.SECONDS.toMillis(5);
 
-    private MapFilesLoader mLoader;
+    private final MapFilesLoader mLoader;
 
     private final Handler mHandler = new Handler();
 

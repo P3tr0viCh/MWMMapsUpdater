@@ -146,31 +146,43 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
 
             final long localMapsTimestamp = getLocalMapsTimestamp();
 
+            final long serverMapsTimestamp;
+
             if (manualStart) {
                 mNotificationHelper.cancel();
 
-                if (manualRequest == ContentResolverHelper.REQUEST_SYNC_CHECK_SERVER ||
-                        manualRequest == ContentResolverHelper.REQUEST_SYNC_DOWNLOAD ||
-                        manualRequest == ContentResolverHelper.REQUEST_SYNC_INSTALL) {
+                switch (manualRequest) {
+                    case ContentResolverHelper.REQUEST_SYNC_DOWNLOAD:
+                        serverMapsTimestamp = getServerMapsTimestamp();
 
-                    final long serverMapsTimestamp = getServerMapsTimestamp();
-
-                    if (manualRequest == ContentResolverHelper.REQUEST_SYNC_DOWNLOAD) {
                         download();
+
                         mNotificationHelper.notifyDownloadEnd(serverMapsTimestamp);
-                    } else if (manualRequest == ContentResolverHelper.REQUEST_SYNC_INSTALL) {
+
+                        break;
+                    case ContentResolverHelper.REQUEST_SYNC_INSTALL:
+                        serverMapsTimestamp = getServerMapsTimestamp();
+
                         if (needDownload()) {
                             download();
-                            mNotificationHelper.notifyDownloadEnd(serverMapsTimestamp);
                         }
 
                         install(serverMapsTimestamp);
-                    }
+
+                        mNotificationHelper.notifyInstallEnd(serverMapsTimestamp);
+
+                        break;
+                    case ContentResolverHelper.REQUEST_SYNC_CHECK_LOCAL_FILES:
+                        break;
+                    case ContentResolverHelper.REQUEST_SYNC_CHECK_SERVER:
+                        getServerMapsTimestamp();
+
+                        break;
                 }
             } else {
                 final long savedServerMapsTimestamp = getSavedServerMapsTimestamp();
 
-                final long serverMapsTimestamp = getServerMapsTimestamp();
+                serverMapsTimestamp = getServerMapsTimestamp();
 
                 //noinspection ConstantConditions
                 UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync",
@@ -184,40 +196,38 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
                 if ((serverMapsTimestamp > localMapsTimestamp) || (BuildConfig.DEBUG && DEBUG_ALWAYS_HAS_UPDATES)) {
                     UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "has updates");
 
-                    if ((serverMapsTimestamp != savedServerMapsTimestamp) || (BuildConfig.DEBUG && DEBUG_NOT_CHECK_SAVED_TIMESTAMP)) {
-                        @PreferencesHelper.ActionOnHasUpdates
-                        int actionOnHasUpdates = mProviderPreferencesHelper.getActionOnHasUpdates();
+                    @PreferencesHelper.ActionOnHasUpdates
+                    int actionOnHasUpdates = mProviderPreferencesHelper.getActionOnHasUpdates();
 
-                        switch (actionOnHasUpdates) {
-                            case PreferencesHelper.ACTION_ON_HAS_UPDATES_DO_SHOW_NOTIFICATION:
-                                UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == show notification");
+                    switch (actionOnHasUpdates) {
+                        case PreferencesHelper.ACTION_ON_HAS_UPDATES_DO_SHOW_NOTIFICATION:
+                            UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == show notification");
 
-                                mNotificationHelper.notifyHasUpdates(serverMapsTimestamp);
+                            mNotificationHelper.notifyHasUpdates(serverMapsTimestamp);
 
-                                break;
-                            case PreferencesHelper.ACTION_ON_HAS_UPDATES_DO_DOWNLOAD:
-                                UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == download");
+                            break;
+                        case PreferencesHelper.ACTION_ON_HAS_UPDATES_DO_DOWNLOAD:
+                            UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == download");
 
-                                if (checkWifi(connectedState)) {
-                                    download();
+                            if (checkWifi(connectedState)) {
+                                download();
 
-                                    mNotificationHelper.notifyDownloadEnd(serverMapsTimestamp);
-                                }
+                                mNotificationHelper.notifyDownloadEnd(serverMapsTimestamp);
+                            }
 
-                                break;
-                            case PreferencesHelper.ACTION_ON_HAS_UPDATES_DO_INSTALL:
-                                UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == download and install");
+                            break;
+                        case PreferencesHelper.ACTION_ON_HAS_UPDATES_DO_INSTALL:
+                            UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == download and install");
 
-                                if (checkWifi(connectedState)) {
-                                    download();
+                            if (checkWifi(connectedState)) {
+                                download();
 
-                                    install(serverMapsTimestamp);
+                                install(serverMapsTimestamp);
 
-                                    mNotificationHelper.notifyInstallEnd(serverMapsTimestamp);
-                                }
+                                mNotificationHelper.notifyInstallEnd(serverMapsTimestamp);
+                            }
 
-                                break;
-                        }
+                            break;
                     }
                 }
             }
@@ -341,7 +351,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
         return timestamp;
     }
 
-    private long getSavedServerMapsTimestamp() throws IOException, RemoteException, FormatException {
+    private long getSavedServerMapsTimestamp() throws RemoteException, FormatException {
         long timestamp = mProviderPreferencesHelper.getServerMapsTimestamp();
 
         UtilsLog.d(LOG_ENABLED, TAG, "getSavedServerMapsTimestamp", "saved server maps date == " + UtilsLog.formatDate(timestamp));
@@ -359,7 +369,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
         SyncProgressObserver.notifyCheckServerTimestamp(getContext(), currentTimeMillis);
     }
 
-    private boolean checkWifi(@ConnectivityHelper.ConnectedState int connectedState) throws RemoteException, FormatException, IOException {
+    private boolean checkWifi(@ConnectivityHelper.ConnectedState int connectedState) throws RemoteException, FormatException {
         if (BuildConfig.DEBUG) {
             return true;
         }
@@ -385,7 +395,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
         }
     }
 
-    private void download() throws IOException, RemoteException, FormatException, CancelledException {
+    private void download() throws IOException, CancelledException {
         MapFilesServerHelper.downloadMaps(mMapFiles, this,
                 new MapFilesServerHelper.OnDownloadProgress() {
 
@@ -424,7 +434,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
     private boolean needDownload() {
         File downloadDir = MapFilesHelper.getDownloadDir();
 
-        if (!downloadDir.exists() || !downloadDir.isDirectory()){
+        if (!downloadDir.exists() || !downloadDir.isDirectory()) {
             UtilsLog.d(LOG_ENABLED, TAG, "needDownload", "Downloaded maps directory not exists or not directory");
             return true;
         }
