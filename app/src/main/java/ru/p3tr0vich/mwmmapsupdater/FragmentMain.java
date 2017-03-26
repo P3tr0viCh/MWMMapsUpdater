@@ -877,7 +877,7 @@ public class FragmentMain extends FragmentBase implements
         mHandler.post(mStatusChangedRunnable);
     }
 
-    private void setFloatingActionButtonVisible(boolean visible) {
+    public void setFloatingActionButtonVisible(boolean visible) {
         final float value = visible ? 1.0f : 0.0f;
         mFloatingActionButton.animate().setStartDelay(mStartDelayFab).scaleX(value).scaleY(value);
     }

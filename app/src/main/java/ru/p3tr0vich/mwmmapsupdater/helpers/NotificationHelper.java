@@ -22,6 +22,8 @@ public class NotificationHelper {
 
     private final Notification.Builder mBuilder;
 
+    private int mDefaults = 0;
+
     public NotificationHelper(@NonNull Context context) {
         mContext = context;
 
@@ -34,6 +36,25 @@ public class NotificationHelper {
 
         mBuilder = new Notification.Builder(context);
         mBuilder.setContentIntent(contentIntent);
+    }
+
+    public void setDefaults(boolean sound, boolean vibrate, boolean lights) {
+        if (sound && vibrate && lights) {
+            mDefaults = Notification.DEFAULT_ALL;
+            return;
+        }
+
+        mDefaults = 0;
+
+        if (sound) {
+            mDefaults |= Notification.DEFAULT_SOUND;
+        }
+        if (vibrate) {
+            mDefaults |= Notification.DEFAULT_VIBRATE;
+        }
+        if (lights) {
+            mDefaults |= Notification.DEFAULT_LIGHTS;
+        }
     }
 
     private void notify(@NonNull Notification notification) {
@@ -52,7 +73,7 @@ public class NotificationHelper {
         mBuilder.setSmallIcon(R.mipmap.ic_notification);
         mBuilder.setLargeIcon(BitmapFactory.decodeResource(mContext.getResources(), R.mipmap.ic_launcher));
         mBuilder.setAutoCancel(true);
-        mBuilder.setDefaults(Notification.DEFAULT_ALL);
+        mBuilder.setDefaults(mDefaults);
 
         notify(mBuilder.build());
     }
@@ -90,7 +111,7 @@ public class NotificationHelper {
         mBuilder.setLargeIcon(BitmapFactory.decodeResource(mContext.getResources(), R.mipmap.ic_launcher));
         mBuilder.setAutoCancel(true);
         mBuilder.setOngoing(false);
-        mBuilder.setDefaults(Notification.DEFAULT_ALL);
+        mBuilder.setDefaults(mDefaults);
 
         notify(mBuilder.build());
     }
@@ -105,7 +126,7 @@ public class NotificationHelper {
         mBuilder.setLargeIcon(BitmapFactory.decodeResource(mContext.getResources(), R.mipmap.ic_launcher));
         mBuilder.setAutoCancel(true);
         mBuilder.setOngoing(false);
-        mBuilder.setDefaults(Notification.DEFAULT_ALL);
+        mBuilder.setDefaults(mDefaults);
 
         notify(mBuilder.build());
     }

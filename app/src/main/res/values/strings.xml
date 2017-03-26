@@ -33,4 +33,7 @@
     <string name="dialog_btn_ok">OK</string>
     <string name="dialog_btn_cancel">ОТМЕНА</string>
     <string name="dialog_btn_download">СКАЧАТЬ</string>
+
+    <string name="action_settings">Настройки</string>
+    <string name="action_about">О программе</string>
 </resources>

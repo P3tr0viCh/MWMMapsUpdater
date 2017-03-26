@@ -72,7 +72,8 @@ public class PreferencesHelper {
         @IntDef({UNKNOWN,
                 PARENT_MAPS_DIR,
                 LOCAL_MAPS_TIMESTAMP, SERVER_MAPS_TIMESTAMP, CHECK_SERVER_TIMESTAMP,
-                ACTION_ON_HAS_UPDATES, DOWNLOAD_ONLY_ON_WIFI, SAVE_ORIGINAL_MAPS})
+                ACTION_ON_HAS_UPDATES, DOWNLOAD_ONLY_ON_WIFI, SAVE_ORIGINAL_MAPS,
+                NOTIFICATION_DEFAULTS_SOUND, NOTIFICATION_DEFAULTS_VIBRATE, NOTIFICATION_DEFAULTS_LIGHTS})
         public @interface KeyAsInt {
         }
 
@@ -99,6 +100,13 @@ public class PreferencesHelper {
         public final String saveOriginalMaps;
         public static final int SAVE_ORIGINAL_MAPS = R.string.pref_key_save_original_maps;
 
+        public final String notificationDefaultsSound;
+        public static final int NOTIFICATION_DEFAULTS_SOUND = R.string.pref_key_notification_defaults_sound;
+        public final String notificationDefaultsVibrate;
+        public static final int NOTIFICATION_DEFAULTS_VIBRATE = R.string.pref_key_notification_defaults_vibrate;
+        public final String notificationDefaultsLights;
+        public static final int NOTIFICATION_DEFAULTS_LIGHTS = R.string.pref_key_notification_defaults_lights;
+
         private Keys(@NonNull Context context) {
             parentMapsDir = context.getString(PARENT_MAPS_DIR);
 
@@ -109,17 +117,28 @@ public class PreferencesHelper {
             actionOnHasUpdates = context.getString(ACTION_ON_HAS_UPDATES);
             downloadOnlyOnWifi = context.getString(DOWNLOAD_ONLY_ON_WIFI);
             saveOriginalMaps = context.getString(SAVE_ORIGINAL_MAPS);
+
+            notificationDefaultsSound = context.getString(NOTIFICATION_DEFAULTS_SOUND);
+            notificationDefaultsVibrate = context.getString(NOTIFICATION_DEFAULTS_VIBRATE);
+            notificationDefaultsLights = context.getString(NOTIFICATION_DEFAULTS_LIGHTS);
         }
 
         @KeyAsInt
         public int getAsInt(@Nullable String key) {
             if (parentMapsDir.equals(key)) return PARENT_MAPS_DIR;
+
             if (localMapsTimestamp.equals(key)) return LOCAL_MAPS_TIMESTAMP;
             if (serverMapsTimestamp.equals(key)) return SERVER_MAPS_TIMESTAMP;
             if (checkServerTimestamp.equals(key)) return CHECK_SERVER_TIMESTAMP;
+
             if (actionOnHasUpdates.equals(key)) return ACTION_ON_HAS_UPDATES;
             if (downloadOnlyOnWifi.equals(key)) return DOWNLOAD_ONLY_ON_WIFI;
             if (saveOriginalMaps.equals(key)) return SAVE_ORIGINAL_MAPS;
+
+            if (notificationDefaultsSound.equals(key)) return NOTIFICATION_DEFAULTS_SOUND;
+            if (notificationDefaultsVibrate.equals(key)) return NOTIFICATION_DEFAULTS_VIBRATE;
+            if (notificationDefaultsLights.equals(key)) return NOTIFICATION_DEFAULTS_LIGHTS;
+
             return UNKNOWN;
         }
     }
@@ -158,6 +177,9 @@ public class PreferencesHelper {
 
             case Keys.DOWNLOAD_ONLY_ON_WIFI:
             case Keys.SAVE_ORIGINAL_MAPS:
+            case Keys.NOTIFICATION_DEFAULTS_SOUND:
+            case Keys.NOTIFICATION_DEFAULTS_VIBRATE:
+            case Keys.NOTIFICATION_DEFAULTS_LIGHTS:
                 return PREFERENCE_TYPE_BOOL;
 
             default:
@@ -197,6 +219,7 @@ public class PreferencesHelper {
                 case Keys.PARENT_MAPS_DIR:
                     result.put(preference, getParentMapsDir());
                     break;
+
                 case Keys.LOCAL_MAPS_TIMESTAMP:
                     result.put(preference, getLocalMapsTimestamp());
                     break;
@@ -206,6 +229,7 @@ public class PreferencesHelper {
                 case Keys.CHECK_SERVER_TIMESTAMP:
                     result.put(preference, getCheckServerTimestamp());
                     break;
+
                 case Keys.ACTION_ON_HAS_UPDATES:
                     result.put(preference, getActionOnHasUpdates());
                     break;
@@ -214,6 +238,16 @@ public class PreferencesHelper {
                     break;
                 case Keys.SAVE_ORIGINAL_MAPS:
                     result.put(preference, isSaveOriginalMaps());
+                    break;
+
+                case Keys.NOTIFICATION_DEFAULTS_SOUND:
+                    result.put(preference, isNotificationUseDefaultSound());
+                    break;
+                case Keys.NOTIFICATION_DEFAULTS_VIBRATE:
+                    result.put(preference, isNotificationUseDefaultVibrate());
+                    break;
+                case Keys.NOTIFICATION_DEFAULTS_LIGHTS:
+                    result.put(preference, isNotificationUseDefaultLights());
                     break;
                 case Keys.UNKNOWN:
                 default:
@@ -311,6 +345,7 @@ public class PreferencesHelper {
                 case Keys.PARENT_MAPS_DIR:
                     putParentMapsDir(preferences.getAsString(preference));
                     break;
+
                 case Keys.LOCAL_MAPS_TIMESTAMP:
                     putLocalMapsTimestamp(preferences.getAsLong(preference));
                     break;
@@ -320,6 +355,7 @@ public class PreferencesHelper {
                 case Keys.CHECK_SERVER_TIMESTAMP:
                     putCheckServerTimestamp(preferences.getAsLong(preference));
                     break;
+
                 case Keys.ACTION_ON_HAS_UPDATES:
                     putActionOnHasUpdates(getActionOnHasUpdatesFromInt(preferences.getAsInteger(preference)));
                     break;
@@ -328,6 +364,16 @@ public class PreferencesHelper {
                     break;
                 case Keys.SAVE_ORIGINAL_MAPS:
                     putSaveOriginalMaps(preferences.getAsBoolean(preference));
+                    break;
+
+                case Keys.NOTIFICATION_DEFAULTS_SOUND:
+                    putNotificationUseDefaultSound(preferences.getAsBoolean(preference));
+                    break;
+                case Keys.NOTIFICATION_DEFAULTS_VIBRATE:
+                    putNotificationUseDefaultVibrate(preferences.getAsBoolean(preference));
+                    break;
+                case Keys.NOTIFICATION_DEFAULTS_LIGHTS:
+                    putNotificationUseDefaultLights(preferences.getAsBoolean(preference));
                     break;
                 case Keys.UNKNOWN:
                 default:
@@ -340,7 +386,7 @@ public class PreferencesHelper {
     }
 
     @NonNull
-    private String getString(String key, @NonNull String defValue) {
+    private String getString(String key, @SuppressWarnings("SameParameterValue") @NonNull String defValue) {
         return mSharedPreferences.getString(key, defValue);
     }
 
@@ -434,4 +480,38 @@ public class PreferencesHelper {
                 .putBoolean(keys.saveOriginalMaps, saveOriginalMaps)
                 .apply();
     }
+
+    public boolean isNotificationUseDefaultSound() {
+        return mSharedPreferences.getBoolean(keys.notificationDefaultsSound, false);
+    }
+
+    private void putNotificationUseDefaultSound(boolean b) {
+        mSharedPreferences
+                .edit()
+                .putBoolean(keys.notificationDefaultsSound, b)
+                .apply();
+    }
+
+    public boolean isNotificationUseDefaultVibrate() {
+        return mSharedPreferences.getBoolean(keys.notificationDefaultsVibrate, true);
+    }
+
+    private void putNotificationUseDefaultVibrate(boolean b) {
+        mSharedPreferences
+                .edit()
+                .putBoolean(keys.notificationDefaultsVibrate, b)
+                .apply();
+    }
+
+    public boolean isNotificationUseDefaultLights() {
+        return mSharedPreferences.getBoolean(keys.notificationDefaultsLights, true);
+    }
+
+    private void putNotificationUseDefaultLights(boolean b) {
+        mSharedPreferences
+                .edit()
+                .putBoolean(keys.notificationDefaultsLights, b)
+                .apply();
+    }
+
 }

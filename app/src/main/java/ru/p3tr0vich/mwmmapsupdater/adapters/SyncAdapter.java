@@ -127,6 +127,11 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
         init(provider);
 
         try {
+            mNotificationHelper.setDefaults(
+                    mProviderPreferencesHelper.isNotificationUseDefaultSound(),
+                    mProviderPreferencesHelper.isNotificationUseDefaultVibrate(),
+                    mProviderPreferencesHelper.isNotificationUseDefaultLights());
+
             int connectedState = updateConnectedState();
 
             if (BuildConfig.DEBUG && DEBUG_WAIT_ENABLED) {
@@ -140,9 +145,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
                 }
             }
 
-            String parentMapsDir = mProviderPreferencesHelper.getParentMapsDir();
-
-            mMapFiles = MapFilesHelper.find(parentMapsDir);
+            mMapFiles = MapFilesHelper.find(mProviderPreferencesHelper.getParentMapsDir());
 
             final long localMapsTimestamp = getLocalMapsTimestamp();
 
@@ -188,18 +191,15 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
                 UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync",
                         "serverMapsTimestamp > localMapsTimestamp == " + (serverMapsTimestamp > localMapsTimestamp) +
                                 ((BuildConfig.DEBUG && DEBUG_ALWAYS_HAS_UPDATES) ? " (ignored)" : ""));
-                //noinspection ConstantConditions
-                UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync",
-                        "serverMapsTimestamp != savedServerMapsTimestamp == " + (serverMapsTimestamp != savedServerMapsTimestamp) +
-                                ((BuildConfig.DEBUG && DEBUG_NOT_CHECK_SAVED_TIMESTAMP) ? " (ignored)" : ""));
+//                //noinspection ConstantConditions
+//                UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync",
+//                        "serverMapsTimestamp != savedServerMapsTimestamp == " + (serverMapsTimestamp != savedServerMapsTimestamp) +
+//                                ((BuildConfig.DEBUG && DEBUG_NOT_CHECK_SAVED_TIMESTAMP) ? " (ignored)" : ""));
 
                 if ((serverMapsTimestamp > localMapsTimestamp) || (BuildConfig.DEBUG && DEBUG_ALWAYS_HAS_UPDATES)) {
                     UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "has updates");
 
-                    @PreferencesHelper.ActionOnHasUpdates
-                    int actionOnHasUpdates = mProviderPreferencesHelper.getActionOnHasUpdates();
-
-                    switch (actionOnHasUpdates) {
+                    switch (mProviderPreferencesHelper.getActionOnHasUpdates()) {
                         case PreferencesHelper.ACTION_ON_HAS_UPDATES_DO_SHOW_NOTIFICATION:
                             UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "actionOnHasUpdates == show notification");
 

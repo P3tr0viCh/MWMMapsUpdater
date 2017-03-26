@@ -5,7 +5,7 @@ import android.support.annotation.StringRes;
 
 import ru.p3tr0vich.mwmmapsupdater.factories.FragmentFactory;
 
-interface FragmentInterface {
+public interface FragmentInterface {
 
     @FragmentFactory.Ids.Id
     int getFragmentId();

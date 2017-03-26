@@ -142,4 +142,16 @@ public class ProviderPreferencesHelper {
     public boolean isSaveOriginalMaps() throws RemoteException, FormatException {
         return queryGetAsBool(mPreferencesHelper.keys.saveOriginalMaps);
     }
+
+    public boolean isNotificationUseDefaultSound() throws RemoteException, FormatException {
+        return queryGetAsBool(mPreferencesHelper.keys.notificationDefaultsSound);
+    }
+
+    public boolean isNotificationUseDefaultVibrate() throws RemoteException, FormatException {
+        return queryGetAsBool(mPreferencesHelper.keys.notificationDefaultsVibrate);
+    }
+
+    public boolean isNotificationUseDefaultLights() throws RemoteException, FormatException {
+        return queryGetAsBool(mPreferencesHelper.keys.notificationDefaultsLights);
+    }
 }
