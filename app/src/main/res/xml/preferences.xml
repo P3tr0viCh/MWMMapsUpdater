@@ -1,0 +1,6 @@
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <Preference
+        android:icon="@drawable/ic_information"
+        android:summary="Add preferences"
+        android:title="TODO"/>
+</PreferenceScreen>

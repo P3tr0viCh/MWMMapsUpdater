@@ -125,6 +125,11 @@ public class FragmentMain extends FragmentBase implements
     private Object mSyncMonitor;
 
     @Override
+    public int getTitleId() {
+        return R.string.app_name;
+    }
+
+    @Override
     public void onAttach(Context context) {
         super.onAttach(context);
         if (context instanceof OnListFragmentInteractionListener) {

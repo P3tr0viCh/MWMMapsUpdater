@@ -9,8 +9,10 @@ import android.support.v4.app.Fragment;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
+import ru.p3tr0vich.mwmmapsupdater.FragmentAbout;
 import ru.p3tr0vich.mwmmapsupdater.FragmentBase;
 import ru.p3tr0vich.mwmmapsupdater.FragmentMain;
+import ru.p3tr0vich.mwmmapsupdater.FragmentPreferences;
 
 public class FragmentFactory {
 
@@ -18,16 +20,22 @@ public class FragmentFactory {
 
         @Retention(RetentionPolicy.SOURCE)
         @IntDef({BAD_ID,
-                MAIN})
+                MAIN,
+                PREFERENCES,
+                ABOUT})
         @interface Id {
         }
 
         int BAD_ID = -1;
         int MAIN = 0;
+        int PREFERENCES = 1;
+        int ABOUT = 2;
     }
 
     private interface Tags {
         String MAIN = FragmentMain.class.getSimpleName();
+        String PREFERENCES = FragmentPreferences.class.getSimpleName();
+        String ABOUT = FragmentAbout.class.getSimpleName();
     }
 
     public interface MainFragment {
@@ -45,6 +53,12 @@ public class FragmentFactory {
         switch (fragmentId) {
             case Ids.MAIN:
                 fragment = new FragmentMain();
+                break;
+            case Ids.PREFERENCES:
+                fragment = new FragmentPreferences();
+                break;
+            case Ids.ABOUT:
+                fragment = new FragmentAbout();
                 break;
             case Ids.BAD_ID:
             default:
@@ -69,6 +83,10 @@ public class FragmentFactory {
         switch (id) {
             case Ids.MAIN:
                 return Tags.MAIN;
+            case Ids.PREFERENCES:
+                return Tags.PREFERENCES;
+            case Ids.ABOUT:
+                return Tags.ABOUT;
             case Ids.BAD_ID:
             default:
                 throw new IllegalArgumentException("Fragment bad ID");

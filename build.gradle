@@ -18,6 +18,8 @@ ext {
     supportDesign = 'com.android.support:design:' + supportVersion
     supportAppCompat = 'com.android.support:appcompat-v7:' + supportVersion
     supportRecyclerView = 'com.android.support:recyclerview-v7:' + supportVersion
+    supportPreferenceV7 = 'com.android.support:preference-v7:' + supportVersion
+    supportPreferenceV14 = 'com.android.support:preference-v14:' + supportVersion
 }
 
 allprojects {

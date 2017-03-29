@@ -6,9 +6,11 @@
         <project path="$PROJECT_DIR$">
           <extensions>
             <ext name="ext" type="org.gradle.api.internal.plugins.DefaultExtraPropertiesExtension" />
+            <prop name="supportPreferenceV7">com.android.support:preference-v7:26.0.0-alpha1</prop>
             <prop name="supportDesign">com.android.support:design:26.0.0-alpha1</prop>
             <prop name="buildToolsVersion">26.0.0 rc1</prop>
             <prop name="supportAppCompat">com.android.support:appcompat-v7:26.0.0-alpha1</prop>
+            <prop name="supportPreferenceV14">com.android.support:preference-v14:26.0.0-alpha1</prop>
             <prop name="targetSdkVersion" type="java.lang.Integer">23</prop>
             <prop name="supportRecyclerView">com.android.support:recyclerview-v7:26.0.0-alpha1</prop>
             <prop name="minSdkVersion" type="java.lang.Integer">17</prop>

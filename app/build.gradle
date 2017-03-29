@@ -78,4 +78,6 @@ dependencies {
     compile rootProject.ext.supportDesign
     compile rootProject.ext.supportAppCompat
     compile rootProject.ext.supportRecyclerView
+    compile rootProject.ext.supportPreferenceV7
+    compile rootProject.ext.supportPreferenceV14
 }

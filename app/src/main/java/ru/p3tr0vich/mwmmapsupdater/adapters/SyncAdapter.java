@@ -183,7 +183,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
                         break;
                 }
             } else {
-                final long savedServerMapsTimestamp = getSavedServerMapsTimestamp();
+//                final long savedServerMapsTimestamp = getSavedServerMapsTimestamp();
 
                 serverMapsTimestamp = getServerMapsTimestamp();
 

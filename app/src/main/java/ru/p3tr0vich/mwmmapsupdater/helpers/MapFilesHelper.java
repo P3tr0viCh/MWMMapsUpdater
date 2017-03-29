@@ -323,21 +323,6 @@ public class MapFilesHelper {
 
         List<FileInfo> fileInfoList = new ArrayList<>();
 
-//        for (String mapName : mapNameList) {
-//            FileInfo fileInfo = getFileInfo(mapSubDir, mapName);
-//
-//            UtilsLog.d(LOG_ENABLED, TAG, "find", "fileInfo == " + fileInfo);
-//
-//            if (fileInfo != null) {
-//                fileInfoList.add(fileInfo);
-//            }
-//        }
-//
-//        if (fileInfoList.isEmpty()) {
-//            UtilsLog.e(TAG, "findFiles", "Map files read file info error");
-//            return mapFiles;
-//        }
-
         for (String mapName : mapNameList) {
             fileInfoList.add(new FileInfo(mapName));
         }

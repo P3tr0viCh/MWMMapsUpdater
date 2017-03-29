@@ -1,7 +1,18 @@
 <resources>
     <string name="app_name">Обновление карт MAPS.ME</string>
 
+    <string name="title_prefs">Настройки</string>
+    <string name="title_about">О программе</string>
+
     <string name="title_download_without_wifi">Скачать по мобильной сети?</string>
+
+    <string name="about_version">Версия</string>
+    <string name="about_copyright" translatable="false">© П3тр0виЧъ</string>
+    <string name="about_disclaimer">
+        Приложение предоставляется на основе принципов «КАК ЕСТЬ» без каких-либо гарантий,
+        то есть вы используете его на собственный риск и соглашаетесь с тем, что разработчик данного приложения
+        не несёт никакой ответственности перед вами за какой-либо ущерб, включая потерю данных.
+    </string>
 
     <string name="text_map_item_date_local">Установленная версия</string>
     <string name="text_map_item_date_server">Версия на сервере</string>
@@ -34,6 +45,7 @@
     <string name="dialog_btn_cancel">ОТМЕНА</string>
     <string name="dialog_btn_download">СКАЧАТЬ</string>
 
+    <string name="action_main">Карты</string>
     <string name="action_settings">Настройки</string>
     <string name="action_about">О программе</string>
 </resources>
