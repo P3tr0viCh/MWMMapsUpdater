@@ -824,15 +824,15 @@ public class FragmentMain extends FragmentBase implements
     private boolean hasDownloadedMaps() {
         File downloadDir = MapFilesHelper.getDownloadDir();
 
-        if (!downloadDir.exists() || !downloadDir.isDirectory()) {
-            UtilsLog.d(LOG_ENABLED, TAG, "hasDownloadedMaps", "Downloaded maps directory not exists or not directory");
+        if (!UtilsFiles.isDirExists(downloadDir)) {
+            UtilsLog.d(LOG_ENABLED, TAG, "hasDownloadedMaps", "downloaded maps directory not exists or not directory");
             return false;
         }
 
         File[] listFiles = downloadDir.listFiles();
 
         if (listFiles == null || listFiles.length == 0) {
-            UtilsLog.d(LOG_ENABLED, TAG, "hasDownloadedMaps", "Downloaded maps directory empty");
+            UtilsLog.d(LOG_ENABLED, TAG, "hasDownloadedMaps", "downloaded maps directory empty");
 
             return false;
         }

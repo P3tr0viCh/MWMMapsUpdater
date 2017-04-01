@@ -116,4 +116,10 @@ public class UtilsFiles {
                     source.toString() + " to " + dest.toString());
         }
     }
+
+    public static void delete(@NonNull File fileOrDir) throws IOException {
+        if (!fileOrDir.delete()) {
+            throw new IOException(TAG + " -- delete: can not delete file " + fileOrDir.toString());
+        }
+    }
 }

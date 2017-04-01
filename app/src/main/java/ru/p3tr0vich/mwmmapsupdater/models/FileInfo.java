@@ -3,6 +3,7 @@ package ru.p3tr0vich.mwmmapsupdater.models;
 import android.support.annotation.NonNull;
 
 import ru.p3tr0vich.mwmmapsupdater.Consts;
+import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
 public class FileInfo implements Comparable<FileInfo> {
 
@@ -33,7 +34,23 @@ public class FileInfo implements Comparable<FileInfo> {
 
         FileInfo fileInfo = (FileInfo) o;
 
-        return mMapName.equals(fileInfo.mMapName) && mTimestamp == fileInfo.mTimestamp;
+//        return mMapName.equals(fileInfo.mMapName) && mTimestamp == fileInfo.mTimestamp;
+
+        if (!mMapName.equals(fileInfo.mMapName)) return false;
+
+        if (mTimestamp == fileInfo.mTimestamp) return true;
+
+        // TODO: 01.04.2017 bug?
+
+        if (Math.abs(mTimestamp - fileInfo.mTimestamp) > 1000) {
+            return false;
+        } else {
+            UtilsLog.d(true, "FileInfo", "mMapName == " + mMapName,
+                    "this.mTimestamp == " + mTimestamp + ", o.mTimestamp == " + fileInfo.mTimestamp +
+                            ", abs(diff) == " + Math.abs(mTimestamp - fileInfo.mTimestamp));
+
+            return true;
+        }
     }
 
     @Override

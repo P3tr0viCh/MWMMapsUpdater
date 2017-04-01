@@ -47,7 +47,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
 
     private static final boolean DEBUG_WAIT_ENABLED = false;
     private static final boolean DEBUG_ALWAYS_HAS_UPDATES = true;
-    private static final boolean DEBUG_NOT_CHECK_SAVED_TIMESTAMP = true;
+//    private static final boolean DEBUG_NOT_CHECK_SAVED_TIMESTAMP = true;
 
     private ProviderPreferencesHelper mProviderPreferencesHelper;
 
@@ -83,11 +83,22 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
         if (connectedState == ConnectivityHelper.CONNECTED_ROAMING) {
             throw new InternetException("connectedState == CONNECTED_ROAMING");
         } else {
-            if (connectedState == ConnectivityHelper.DISCONNECTED)
+            if (connectedState == ConnectivityHelper.DISCONNECTED) {
                 throw new InternetException("connectedState == DISCONNECTED");
+            }
         }
 
         return connectedState;
+    }
+
+    private static boolean isManualStart(Bundle extras) {
+        return extras.getBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, false) &&
+                extras.getBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, false);
+    }
+
+    @ContentResolverHelper.RequestSync
+    private static int getManualStartRequest(Bundle extras) {
+        return extras.getInt(ContentResolverHelper.SYNC_EXTRAS_REQUEST, ContentResolverHelper.REQUEST_SYNC_CHECK_LOCAL_FILES);
     }
 
     @Override
@@ -96,33 +107,9 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
 
         mSyncCancelled = false;
 
-        boolean manualStart =
-                extras.getBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, false) &&
-                        extras.getBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, false);
+        final boolean manualStart = isManualStart(extras);
 
         UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "manualStart == " + manualStart);
-
-        @ContentResolverHelper.RequestSync
-        int manualRequest;
-        switch (extras.getInt(ContentResolverHelper.SYNC_EXTRAS_REQUEST, ContentResolverHelper.REQUEST_SYNC_CHECK_LOCAL_FILES)) {
-            case ContentResolverHelper.REQUEST_SYNC_CHECK_SERVER:
-                manualRequest = ContentResolverHelper.REQUEST_SYNC_CHECK_SERVER;
-                UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "manualRequest == REQUEST_SYNC_CHECK_SERVER");
-                break;
-            case ContentResolverHelper.REQUEST_SYNC_DOWNLOAD:
-                manualRequest = ContentResolverHelper.REQUEST_SYNC_DOWNLOAD;
-                UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "manualRequest == REQUEST_SYNC_DOWNLOAD");
-                break;
-            case ContentResolverHelper.REQUEST_SYNC_INSTALL:
-                manualRequest = ContentResolverHelper.REQUEST_SYNC_INSTALL;
-                UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "manualRequest == REQUEST_SYNC_INSTALL");
-                break;
-            default:
-            case ContentResolverHelper.REQUEST_SYNC_CHECK_LOCAL_FILES:
-                manualRequest = ContentResolverHelper.REQUEST_SYNC_CHECK_LOCAL_FILES;
-                UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "manualRequest == REQUEST_SYNC_CHECK_LOCAL_FILES");
-                break;
-        }
 
         init(provider);
 
@@ -154,8 +141,10 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
             if (manualStart) {
                 mNotificationHelper.cancel();
 
-                switch (manualRequest) {
+                switch (getManualStartRequest(extras)) {
                     case ContentResolverHelper.REQUEST_SYNC_DOWNLOAD:
+                        UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "manualStartRequest == REQUEST_SYNC_DOWNLOAD");
+
                         serverMapsTimestamp = getServerMapsTimestamp();
 
                         download();
@@ -164,6 +153,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
 
                         break;
                     case ContentResolverHelper.REQUEST_SYNC_INSTALL:
+                        UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "manualStartRequest == REQUEST_SYNC_INSTALL");
+
                         serverMapsTimestamp = getServerMapsTimestamp();
 
                         if (needDownload()) {
@@ -176,8 +167,12 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
 
                         break;
                     case ContentResolverHelper.REQUEST_SYNC_CHECK_LOCAL_FILES:
+                        UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "manualStartRequest == REQUEST_SYNC_CHECK_LOCAL_FILES");
+
                         break;
                     case ContentResolverHelper.REQUEST_SYNC_CHECK_SERVER:
+                        UtilsLog.d(LOG_ENABLED, TAG, "onPerformSync", "manualStartRequest == REQUEST_SYNC_CHECK_SERVER");
+
                         getServerMapsTimestamp();
 
                         break;
@@ -213,6 +208,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
                                 download();
 
                                 mNotificationHelper.notifyDownloadEnd(serverMapsTimestamp);
+                            } else {
+                                UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "download not started: wifi required");
                             }
 
                             break;
@@ -225,6 +222,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
                                 install(serverMapsTimestamp);
 
                                 mNotificationHelper.notifyInstallEnd(serverMapsTimestamp);
+                            } else {
+                                UtilsLog.d(LOG_ENABLED, TAG, "autoSync", "download and install not started: wifi required");
                             }
 
                             break;
@@ -253,17 +252,33 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
         @SyncError
         int error = SYNC_ERROR_OTHER;
 
-        if (e instanceof RemoteException) syncResult.databaseError = true;
-        else if (e instanceof InternetException) {
-            syncResult.stats.numIoExceptions++;
-            error = SYNC_ERROR_INTERNET;
-        } else if (e instanceof IOException) syncResult.stats.numIoExceptions++;
-        else if (e instanceof FormatException) syncResult.stats.numParseExceptions++;
-        else if (e instanceof CancelledException) {
-            syncResult.stats.numIoExceptions++;
-            error = SYNC_ERROR_CANCELLED;
-        } else if (e instanceof InterruptedException) syncResult.stats.numIoExceptions++;
-        else syncResult.databaseError = true;
+        if (e instanceof RemoteException) {
+            syncResult.databaseError = true;
+        } else {
+            if (e instanceof InternetException) {
+                syncResult.stats.numIoExceptions++;
+                error = SYNC_ERROR_INTERNET;
+            } else {
+                if (e instanceof IOException) {
+                    syncResult.stats.numIoExceptions++;
+                } else {
+                    if (e instanceof FormatException) {
+                        syncResult.stats.numParseExceptions++;
+                    } else {
+                        if (e instanceof CancelledException) {
+                            syncResult.stats.numIoExceptions++;
+                            error = SYNC_ERROR_CANCELLED;
+                        } else {
+                            if (e instanceof InterruptedException) {
+                                syncResult.stats.numIoExceptions++;
+                            } else {
+                                syncResult.databaseError = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         UtilsLog.e(TAG, "handleException", e);
 
@@ -289,6 +304,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
         super.onSyncCanceled();
 
         mSyncCancelled = true;
+
         UtilsLog.d(LOG_ENABLED, TAG, "onSyncCanceled");
     }
 
@@ -434,15 +450,15 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
     private boolean needDownload() {
         File downloadDir = MapFilesHelper.getDownloadDir();
 
-        if (!downloadDir.exists() || !downloadDir.isDirectory()) {
-            UtilsLog.d(LOG_ENABLED, TAG, "needDownload", "Downloaded maps directory not exists or not directory");
+        if (!UtilsFiles.isDirExists(downloadDir)) {
+            UtilsLog.d(LOG_ENABLED, TAG, "needDownload", "downloaded maps directory not exists or not directory");
             return true;
         }
 
         File[] listFiles = downloadDir.listFiles();
 
         if (listFiles == null || listFiles.length == 0) {
-            UtilsLog.d(LOG_ENABLED, TAG, "needDownload", "Downloaded maps directory empty");
+            UtilsLog.d(LOG_ENABLED, TAG, "needDownload", "downloaded maps directory empty");
 
             return true;
         }
@@ -536,6 +552,8 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
 
             UtilsLog.d(LOG_ENABLED, TAG, "moveDownloaded", "'" + mapFileDownloaded.getName() + "' moved");
         }
+
+        UtilsFiles.delete(downloadDir);
 
         UtilsLog.d(LOG_ENABLED, TAG, "moveDownloaded", "end");
     }

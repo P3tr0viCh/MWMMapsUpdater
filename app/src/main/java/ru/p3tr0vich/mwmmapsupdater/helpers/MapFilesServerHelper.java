@@ -46,6 +46,8 @@ public class MapFilesServerHelper {
 
     private static final int DEFAULT_CONNECT_TIMEOUT = (int) TimeUnit.SECONDS.toMillis(10);
 
+    private static final int MAX_DOWNLOAD_ATTEMPT_COUNT = 3;
+
     private MapFilesServerHelper() {
     }
 
@@ -245,6 +247,8 @@ public class MapFilesServerHelper {
                     }
 
                     onDownloadProgress.onProgress(progress);
+
+//                    if (progress > 33 && random.nextBoolean()) throw new InternetException("debug");
                 } while (total <= fileLength);
 
                 UtilsFiles.createFile(file);
@@ -321,7 +325,7 @@ public class MapFilesServerHelper {
 
         List<FileInfo> fileInfoList = mapFiles.getFileList();
 
-        int i = 0, count = fileInfoList.size();
+        int i = 0, count = fileInfoList.size(), attemptNum;
 
         for (FileInfo fileInfo : fileInfoList) {
             i++;
@@ -332,7 +336,22 @@ public class MapFilesServerHelper {
 
             onDownloadProgress.onMapStart(mapName, i, count);
 
-            download(mapName, onCancelled, onDownloadProgress);
+            attemptNum = 0;
+            do {
+                try {
+                    download(mapName, onCancelled, onDownloadProgress);
+
+                    attemptNum = MAX_DOWNLOAD_ATTEMPT_COUNT;
+                } catch (InternetException e) {
+                    attemptNum++;
+
+                    UtilsLog.e(TAG, "downloadMaps", e);
+
+                    if (attemptNum == MAX_DOWNLOAD_ATTEMPT_COUNT) {
+                        throw new InternetException(e.getMessage());
+                    }
+                }
+            } while (attemptNum < MAX_DOWNLOAD_ATTEMPT_COUNT);
         }
 
         onDownloadProgress.onEnd();
