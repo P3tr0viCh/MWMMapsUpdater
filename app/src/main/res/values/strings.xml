@@ -48,4 +48,18 @@
     <string name="action_main">Карты</string>
     <string name="action_settings">Настройки</string>
     <string name="action_about">О программе</string>
+
+    <string name="pref_notification_defaults_category_title">Уведомления</string>
+
+    <string name="pref_notification_defaults_sound_title">Звук</string>
+    <string name="pref_notification_defaults_sound_enabled_on">Включен</string>
+    <string name="pref_notification_defaults_sound_enabled_off">Выключен</string>
+
+    <string name="pref_notification_defaults_vibrate_title">Вибрация</string>
+    <string name="pref_notification_defaults_vibrate_enabled_on">Включена</string>
+    <string name="pref_notification_defaults_vibrate_enabled_off">Выключена</string>
+
+    <string name="pref_notification_defaults_lights_title">Световой индикатор</string>
+    <string name="pref_notification_defaults_lights_enabled_on">Включен</string>
+    <string name="pref_notification_defaults_lights_enabled_off">Выключен</string>
 </resources>

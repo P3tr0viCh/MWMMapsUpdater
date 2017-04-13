@@ -482,7 +482,7 @@ public class PreferencesHelper {
     }
 
     public boolean isNotificationUseDefaultSound() {
-        return mSharedPreferences.getBoolean(keys.notificationDefaultsSound, false);
+        return mSharedPreferences.getBoolean(keys.notificationDefaultsSound, mContext.getResources().getBoolean(R.bool.pref_notification_defaults_sound_default_value));
     }
 
     private void putNotificationUseDefaultSound(boolean b) {
@@ -493,7 +493,7 @@ public class PreferencesHelper {
     }
 
     public boolean isNotificationUseDefaultVibrate() {
-        return mSharedPreferences.getBoolean(keys.notificationDefaultsVibrate, true);
+        return mSharedPreferences.getBoolean(keys.notificationDefaultsVibrate, mContext.getResources().getBoolean(R.bool.pref_notification_defaults_vibrate_default_value));
     }
 
     private void putNotificationUseDefaultVibrate(boolean b) {
@@ -504,7 +504,7 @@ public class PreferencesHelper {
     }
 
     public boolean isNotificationUseDefaultLights() {
-        return mSharedPreferences.getBoolean(keys.notificationDefaultsLights, true);
+        return mSharedPreferences.getBoolean(keys.notificationDefaultsLights, mContext.getResources().getBoolean(R.bool.pref_notification_defaults_lights_default_value));
     }
 
     private void putNotificationUseDefaultLights(boolean b) {

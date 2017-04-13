@@ -1,6 +1,26 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
-    <Preference
-        android:icon="@drawable/ic_information"
-        android:summary="Add preferences"
-        android:title="TODO"/>
+    <PreferenceCategory
+        android:title="@string/pref_notification_defaults_category_title">
+        <!--suppress AndroidElementNotAllowed -->
+        <android.support.v7.preference.SwitchPreferenceCompat
+            android:defaultValue="@bool/pref_notification_defaults_sound_default_value"
+            android:key="@string/pref_key_notification_defaults_sound"
+            android:switchTextOff="@string/pref_notification_defaults_sound_enabled_off"
+            android:switchTextOn="@string/pref_notification_defaults_sound_enabled_on"
+            android:title="@string/pref_notification_defaults_sound_title"/>
+        <!--suppress AndroidElementNotAllowed -->
+        <android.support.v7.preference.SwitchPreferenceCompat
+            android:defaultValue="@bool/pref_notification_defaults_vibrate_default_value"
+            android:key="@string/pref_key_notification_defaults_vibrate"
+            android:switchTextOff="@string/pref_notification_defaults_vibrate_enabled_off"
+            android:switchTextOn="@string/pref_notification_defaults_vibrate_enabled_on"
+            android:title="@string/pref_notification_defaults_vibrate_title"/>
+        <!--suppress AndroidElementNotAllowed -->
+        <android.support.v7.preference.SwitchPreferenceCompat
+            android:defaultValue="@bool/pref_notification_defaults_lights_default_value"
+            android:key="@string/pref_key_notification_defaults_lights"
+            android:switchTextOff="@string/pref_notification_defaults_lights_enabled_off"
+            android:switchTextOn="@string/pref_notification_defaults_lights_enabled_on"
+            android:title="@string/pref_notification_defaults_lights_title"/>
+    </PreferenceCategory>
 </PreferenceScreen>
