@@ -34,17 +34,20 @@ public class MapFilesServerHelper {
     private static final boolean LOG_ENABLED = true;
 
     private static final boolean DEBUG_DUMMY_FILE_INFO = false;
-    private static final boolean DEBUG_DUMMY_DOWNLOAD = true;
+    private static final boolean DEBUG_DUMMY_DOWNLOAD = false;
     private static final boolean DEBUG_DUMMY_DOWNLOAD_LOG_PROGRESS = false;
     private static final boolean DEBUG_RETURN_CURRENT_DATE = false;
     private static final boolean DEBUG_DOWNLOAD_WAIT_ENABLED = true;
+    private static final boolean DEBUG_DOWNLOAD_LOG_PROGRESS = true;
     private static final boolean DEBUG_FILE_INFO_WAIT_ENABLED = false;
 
     private static final String PROTOCOL = "http";
     private static final String HOST = "direct.mapswithme.com";
     private static final String PATH = "regular/daily";
 
-    private static final int DEFAULT_CONNECT_TIMEOUT = (int) TimeUnit.SECONDS.toMillis(10);
+    private static final int CONNECT_TIMEOUT = (int) TimeUnit.SECONDS.toMillis(10);
+
+    private static final int BUFFER_LENGTH = 4 * 1024;
 
     private static final int MAX_DOWNLOAD_ATTEMPT_COUNT = 3;
 
@@ -112,7 +115,7 @@ public class MapFilesServerHelper {
                 connection = (HttpURLConnection) url.openConnection();
 
                 connection.setRequestMethod("HEAD");
-                connection.setConnectTimeout(DEFAULT_CONNECT_TIMEOUT);
+                connection.setConnectTimeout(CONNECT_TIMEOUT);
 
                 connection.connect();
             } catch (IOException e) {
@@ -265,7 +268,7 @@ public class MapFilesServerHelper {
             try {
                 connection = (HttpURLConnection) url.openConnection();
 
-                connection.setConnectTimeout(DEFAULT_CONNECT_TIMEOUT);
+                connection.setConnectTimeout(CONNECT_TIMEOUT);
 
                 connection.connect();
 
@@ -283,7 +286,9 @@ public class MapFilesServerHelper {
             OutputStream output = new FileOutputStream(fileDownloadInProgress);
 
             try {
-                byte data[] = new byte[1024];
+                byte data[] = new byte[BUFFER_LENGTH];
+
+                int currentProgress = 0;
 
                 while ((length = inputRead(input, data)) != -1) {
                     onCancelled.checkCancelled();
@@ -292,7 +297,14 @@ public class MapFilesServerHelper {
 
                     progress = (int) (total * 100 / fileLength);
 
-                    onDownloadProgress.onProgress(progress);
+                    if (DEBUG_DOWNLOAD_LOG_PROGRESS) {
+                        UtilsLog.d(LOG_ENABLED, TAG, "download", "length == " + length + ", progress == " + progress);
+                    }
+
+                    if (progress != currentProgress) {
+                        currentProgress = progress;
+                        onDownloadProgress.onProgress(progress);
+                    }
 
                     outputWrite(output, data, length);
                 }

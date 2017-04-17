@@ -367,13 +367,14 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
         return timestamp;
     }
 
-    private long getSavedServerMapsTimestamp() throws RemoteException, FormatException {
-        long timestamp = mProviderPreferencesHelper.getServerMapsTimestamp();
-
-        UtilsLog.d(LOG_ENABLED, TAG, "getSavedServerMapsTimestamp", "saved server maps date == " + UtilsLog.formatDate(timestamp));
-
-        return timestamp;
-    }
+    // TODO: 17.04.2017
+//    private long getSavedServerMapsTimestamp() throws RemoteException, FormatException {
+//        long timestamp = mProviderPreferencesHelper.getServerMapsTimestamp();
+//
+//        UtilsLog.d(LOG_ENABLED, TAG, "getSavedServerMapsTimestamp", "saved server maps date == " + UtilsLog.formatDate(timestamp));
+//
+//        return timestamp;
+//    }
 
     private void serverChecked() throws RemoteException {
         long currentTimeMillis = System.currentTimeMillis();
