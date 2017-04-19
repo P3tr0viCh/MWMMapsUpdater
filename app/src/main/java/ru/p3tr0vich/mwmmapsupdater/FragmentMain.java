@@ -51,7 +51,7 @@ import ru.p3tr0vich.mwmmapsupdater.broadcastreceivers.BroadcastReceiverMapFilesL
 import ru.p3tr0vich.mwmmapsupdater.exceptions.ImplementException;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ConnectivityHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ContentResolverHelper;
-import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesHelper;
+import ru.p3tr0vich.mwmmapsupdater.helpers.FilesHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.NotificationHelper;
 import ru.p3tr0vich.mwmmapsupdater.models.FileInfo;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
@@ -705,13 +705,13 @@ public class FragmentMain extends FragmentBase implements
 
                 break;
             case R.id.action_main_clear_download_maps_dir:
-                File downloadDir = MapFilesHelper.getDownloadDir();
+                File downloadDir = FilesHelper.getDownloadDir();
 
                 UtilsFiles.recursiveDeleteInDirectory(downloadDir);
 
                 break;
             case R.id.action_main_clear_backup_maps_dir:
-                File backupDir = MapFilesHelper.getBackupMapsDir();
+                File backupDir = FilesHelper.getBackupMapsDir();
 
                 UtilsFiles.recursiveDeleteInDirectory(backupDir);
 
@@ -822,7 +822,7 @@ public class FragmentMain extends FragmentBase implements
     }
 
     private boolean hasDownloadedMaps() {
-        File downloadDir = MapFilesHelper.getDownloadDir();
+        File downloadDir = FilesHelper.getDownloadDir();
 
         if (!UtilsFiles.isDirExists(downloadDir)) {
             UtilsLog.d(LOG_ENABLED, TAG, "hasDownloadedMaps", "downloaded maps directory not exists or not directory");

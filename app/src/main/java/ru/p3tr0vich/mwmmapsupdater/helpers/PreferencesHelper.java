@@ -281,6 +281,8 @@ public class PreferencesHelper {
                     matrixCursor.addRow(new Object[]{key, preferences.getAsInteger(key)});
                     break;
                 case PREFERENCE_TYPE_BOOL:
+                    // TODO: 19.04.2017 check
+                    //noinspection UnnecessaryBoxing
                     matrixCursor.addRow(new Object[]{key, Integer.valueOf(preferences.getAsBoolean(key) ? 1 : 0)});
                     break;
             }
@@ -400,7 +402,7 @@ public class PreferencesHelper {
         String dirName = getString(keys.parentMapsDir);
 
         if (dirName.isEmpty()) {
-            File dir = MapFilesHelper.getDefaultParentMapsDir();
+            File dir = FilesHelper.getDefaultParentMapsDir();
             dirName = dir.getAbsolutePath();
         }
 

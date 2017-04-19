@@ -1,7 +1,6 @@
 package ru.p3tr0vich.mwmmapsupdater.helpers;
 
 import android.content.Context;
-import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
@@ -52,23 +51,6 @@ public class MapFilesHelper {
         }
     };
 
-    private static final String MAPS_INFO_FILE_NAME = "maps_info.json";
-
-    /**
-     * Имя каталога с картами по умолчанию, располагается в корне.
-     */
-    private static final String DEFAULT_PARENT_MAPS_DIR_NAME = "MapsWithMe";
-
-    /**
-     * Имя каталога для загруженных карт, располагается в каталоге downloads.
-     */
-    private static final String DOWNLOAD_DIR_NAME = "MapsWithMe maps";
-
-    /**
-     * Имя каталога для сохранения оригинальных карт, располагается в корне.
-     */
-    private static final String BACKUP_MAPS_DIR_NAME = "MapsWithMe backup";
-
     private interface JsonFields {
         String MAP_SUB_DIR = "directory";
 
@@ -81,30 +63,9 @@ public class MapFilesHelper {
     private MapFilesHelper() {
     }
 
-    @NonNull
-    private static File getMapsInfoFile(@NonNull Context context) {
-        return new File(context.getFilesDir(), MAPS_INFO_FILE_NAME);
-    }
-
-    @NonNull
-    public static File getDefaultParentMapsDir() {
-        return new File(Environment.getExternalStorageDirectory(), DEFAULT_PARENT_MAPS_DIR_NAME);
-    }
-
-    @NonNull
-    public static File getDownloadDir() {
-        return new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                DOWNLOAD_DIR_NAME);
-    }
-
-    @NonNull
-    public static File getBackupMapsDir() {
-        return new File(Environment.getExternalStorageDirectory(), BACKUP_MAPS_DIR_NAME);
-    }
-
     public static boolean readFromJSONFile(@NonNull Context context, @NonNull MapFiles mapFiles) {
         try {
-            File file = getMapsInfoFile(context);
+            File file = FilesHelper.getMapsInfoFile(context);
 
             if (!UtilsFiles.isFileExists(file)) {
                 return false;
@@ -166,7 +127,7 @@ public class MapFilesHelper {
 
             UtilsLog.d(LOG_ENABLED, TAG, "writeToJSONFile", "json == " + json.toString());
 
-            File file = getMapsInfoFile(context);
+            File file = FilesHelper.getMapsInfoFile(context);
 
             UtilsFiles.writeJSON(file, json);
 
@@ -180,7 +141,7 @@ public class MapFilesHelper {
     }
 
     public static void deleteJSONFile(@NonNull Context context) {
-        File file = getMapsInfoFile(context);
+        File file = FilesHelper.getMapsInfoFile(context);
         //noinspection ResultOfMethodCallIgnored
         file.delete();
     }

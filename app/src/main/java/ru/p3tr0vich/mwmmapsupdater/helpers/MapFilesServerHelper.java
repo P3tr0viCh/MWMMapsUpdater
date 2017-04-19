@@ -1,7 +1,12 @@
 package ru.p3tr0vich.mwmmapsupdater.helpers;
 
+import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -24,6 +29,7 @@ import ru.p3tr0vich.mwmmapsupdater.exceptions.CancelledException;
 import ru.p3tr0vich.mwmmapsupdater.exceptions.InternetException;
 import ru.p3tr0vich.mwmmapsupdater.models.FileInfo;
 import ru.p3tr0vich.mwmmapsupdater.models.MapFiles;
+import ru.p3tr0vich.mwmmapsupdater.utils.Utils;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsFiles;
 import ru.p3tr0vich.mwmmapsupdater.utils.UtilsLog;
 
@@ -40,6 +46,7 @@ public class MapFilesServerHelper {
     private static final boolean DEBUG_DOWNLOAD_WAIT_ENABLED = true;
     private static final boolean DEBUG_DOWNLOAD_LOG_PROGRESS = true;
     private static final boolean DEBUG_FILE_INFO_WAIT_ENABLED = false;
+    private static final boolean DEBUG_FILE_INFO_LIST = false;
 
     private static final String PROTOCOL = "http";
     private static final String HOST = "direct.mapswithme.com";
@@ -88,7 +95,7 @@ public class MapFilesServerHelper {
 
     @NonNull
     private static File getDownloadFile(@NonNull String mapName) {
-        return new File(MapFilesHelper.getDownloadDir(), mapName + Consts.MAP_FILE_NAME_EXT);
+        return new File(FilesHelper.getDownloadDir(), mapName + Consts.MAP_FILE_NAME_EXT);
     }
 
     @Nullable
@@ -147,7 +154,7 @@ public class MapFilesServerHelper {
         for (String mapName : mapNames) {
             FileInfo fileInfo = getFileInfo(mapName);
 
-            UtilsLog.d(LOG_ENABLED, TAG, "getFileInfoList", "fileInfo == " + fileInfo);
+            UtilsLog.d(DEBUG_FILE_INFO_LIST, TAG, "getFileInfoList", "fileInfo == " + fileInfo);
 
             if (fileInfo != null) {
                 fileInfoList.add(fileInfo);
@@ -204,7 +211,7 @@ public class MapFilesServerHelper {
         output.write(data, 0, len);
     }
 
-    private static void download(@NonNull String mapName, @NonNull OnCancelled onCancelled, @NonNull OnDownloadProgress onDownloadProgress) throws IOException, CancelledException {
+    private static File download(@NonNull String mapName, @NonNull OnCancelled onCancelled, @NonNull OnDownloadProgress onDownloadProgress) throws IOException, CancelledException {
         UtilsLog.d(LOG_ENABLED, TAG, "download", "start, mapName == " + mapName);
 
         long fileLength;
@@ -250,13 +257,11 @@ public class MapFilesServerHelper {
                     }
 
                     onDownloadProgress.onProgress(progress);
-
-//                    if (progress > 33 && random.nextBoolean()) throw new InternetException("debug");
                 } while (total <= fileLength);
 
                 UtilsFiles.createFile(file);
 
-                return;
+                return file;
             } // DEBUG_DUMMY_DOWNLOAD end
 
             URL url = getUrl(mapName);
@@ -319,17 +324,37 @@ public class MapFilesServerHelper {
             connection.disconnect();
 
             UtilsFiles.rename(fileDownloadInProgress, file);
+
+            return file;
         } finally {
             UtilsLog.d(LOG_ENABLED, TAG, "download", "end");
         }
     }
 
-    public static void downloadMaps(@NonNull MapFiles mapFiles, @NonNull OnCancelled onCancelled, @NonNull OnDownloadProgress onDownloadProgress) throws IOException, CancelledException {
+    private interface JsonFields {
+        String FILES = "files";
+
+        String FILE_NAME = "name";
+        String FILE_STATUS = "status";
+        String FILE_TIMESTAMP = "timestamp";
+    }
+
+    private interface JsonValuesStatus {
+        String WAITING = "waiting";
+        String DOWNLOADING = "downloading";
+        String DOWNLOADED = "download";
+    }
+
+    public static void downloadMaps(Context context, @NonNull MapFiles mapFiles, @NonNull OnCancelled onCancelled, @NonNull OnDownloadProgress onDownloadProgress) throws IOException, CancelledException {
         UtilsLog.d(LOG_ENABLED, TAG, "downloadMaps", "map count == " + mapFiles.getFileList().size());
 
         onDownloadProgress.onStart();
 
-        File downloadDir = MapFilesHelper.getDownloadDir();
+        File downloadInfoFile = FilesHelper.getDownloadInfoFile(context);
+
+        File downloadDir = FilesHelper.getDownloadDir();
+
+        File mapFile;
 
         UtilsFiles.makeDir(downloadDir);
 
@@ -339,9 +364,28 @@ public class MapFilesServerHelper {
 
         int i = 0, count = fileInfoList.size(), attemptNum;
 
-        for (FileInfo fileInfo : fileInfoList) {
-            i++;
+        JSONObject json = new JSONObject();
+        JSONArray files = new JSONArray();
 
+        JSONObject fileInfoObject;
+
+        for (FileInfo fileInfo : fileInfoList) {
+            fileInfoObject = new JSONObject();
+            try {
+                fileInfoObject.put(JsonFields.FILE_NAME, fileInfo.getMapName());
+                fileInfoObject.put(JsonFields.FILE_STATUS, JsonValuesStatus.WAITING);
+
+                files.put(fileInfoObject);
+            } catch (JSONException e) {
+                UtilsLog.e(TAG, "downloadMaps", e);
+
+                throw new IOException(e);
+            }
+        }
+
+        long lastModified;
+
+        for (FileInfo fileInfo : fileInfoList) {
             String mapName = fileInfo.getMapName();
 
             onCancelled.checkCancelled();
@@ -351,9 +395,34 @@ public class MapFilesServerHelper {
             attemptNum = 0;
             do {
                 try {
-                    download(mapName, onCancelled, onDownloadProgress);
+                    fileInfoObject = files.getJSONObject(i);
+
+                    fileInfoObject.put(JsonFields.FILE_STATUS, JsonValuesStatus.DOWNLOADING);
+
+                    files.put(i, fileInfoObject);
+
+                    json.put(JsonFields.FILES, files);
+
+                    UtilsFiles.writeJSON(downloadInfoFile, json);
+
+//                  ***
+                    mapFile = download(mapName, onCancelled, onDownloadProgress);
+//                  ***
 
                     attemptNum = MAX_DOWNLOAD_ATTEMPT_COUNT;
+
+                    fileInfoObject.put(JsonFields.FILE_STATUS, JsonValuesStatus.DOWNLOADED);
+                    fileInfoObject.put(JsonFields.FILE_TIMESTAMP, mapFile.lastModified());
+
+                    files.put(i, fileInfoObject);
+
+                    json.put(JsonFields.FILES, files);
+
+                    UtilsFiles.writeJSON(downloadInfoFile, json);
+                } catch (JSONException e) {
+                    UtilsLog.e(TAG, "downloadMaps", e);
+
+                    throw new IOException(e);
                 } catch (InternetException e) {
                     attemptNum++;
 
@@ -364,6 +433,8 @@ public class MapFilesServerHelper {
                     }
                 }
             } while (attemptNum < MAX_DOWNLOAD_ATTEMPT_COUNT);
+
+            i++;
         }
 
         onDownloadProgress.onEnd();

@@ -27,6 +27,7 @@ import ru.p3tr0vich.mwmmapsupdater.exceptions.CancelledException;
 import ru.p3tr0vich.mwmmapsupdater.exceptions.InternetException;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ConnectivityHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.ContentResolverHelper;
+import ru.p3tr0vich.mwmmapsupdater.helpers.FilesHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.MapFilesServerHelper;
 import ru.p3tr0vich.mwmmapsupdater.helpers.NotificationHelper;
@@ -413,7 +414,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
     }
 
     private void download() throws IOException, CancelledException {
-        MapFilesServerHelper.downloadMaps(mMapFiles, this,
+        MapFilesServerHelper.downloadMaps(getContext(), mMapFiles, this,
                 new MapFilesServerHelper.OnDownloadProgress() {
 
                     private final JSONObject namesAndDescriptions = Utils.getMapNamesAndDescriptions(getContext());
@@ -449,7 +450,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
     }
 
     private boolean needDownload() {
-        File downloadDir = MapFilesHelper.getDownloadDir();
+        File downloadDir = FilesHelper.getDownloadDir();
 
         if (!UtilsFiles.isDirExists(downloadDir)) {
             UtilsLog.d(LOG_ENABLED, TAG, "needDownload", "downloaded maps directory not exists or not directory");
@@ -495,7 +496,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
     private void saveOriginalMaps() throws IOException, CancelledException {
         UtilsLog.d(LOG_ENABLED, TAG, "saveOriginalMaps", "start");
 
-        File backupMapsDirParent = MapFilesHelper.getBackupMapsDir();
+        File backupMapsDirParent = FilesHelper.getBackupMapsDir();
 
         File backupMapsDir = new File(backupMapsDirParent, mMapFiles.getMapSubDir());
 
@@ -534,7 +535,7 @@ public class SyncAdapter extends AbstractThreadedSyncAdapter implements MapFiles
 
         File mapDir = new File(mMapFiles.getMapDir(), mMapFiles.getMapSubDir());
 
-        File downloadDir = MapFilesHelper.getDownloadDir();
+        File downloadDir = FilesHelper.getDownloadDir();
 
         String mapFileName;
 

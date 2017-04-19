@@ -90,7 +90,7 @@ public class NotificationHelper {
     }
 
     public void notifyDownloadMapStart(@NonNull String mapName, int i, int count) {
-        mBuilder.setContentText(mContext.getString(R.string.text_notification_download_map_start_text, mapName, i, count));
+        mBuilder.setContentText(mContext.getString(R.string.text_notification_download_map_start_text, mapName, i + 1, count));
 
         notify(mBuilder.build());
     }
